@@ -1,0 +1,29 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "resharper-build",
+			"target": "Build",
+			"group": "build",
+			"problemMatcher": [],
+			"label": "ReSharper: Build"
+		},
+		{
+			"type": "dotnet",
+			"task": "watch SupportAssistant.Desktop",
+			"file": "E:\\src\\github\\nam20485\\SupportAssistant\\SupportAssistant.Desktop\\SupportAssistant.Desktop\\SupportAssistant.Desktop.csproj",
+			"problemMatcher": [],
+			"label": "dotnet: watch SupportAssistant.Desktop"
+		},
+		{
+			"type": "dotnet",
+			"task": "build",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"problemMatcher": [],
+			"label": "dotnet: rebuild"
+		}
+	]
+}
