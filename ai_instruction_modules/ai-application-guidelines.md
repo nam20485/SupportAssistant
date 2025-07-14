@@ -32,8 +32,11 @@ C#
 
 Smaller projects can use a TUI with:
 
-* Spectre.Console
+* [Spectre.Console](https://github.com/spectreconsole/spectre.console)
 * Spectre.Console.Cli
+* Spectre.Console.Testing
+
+[Spectre.Console Best Practices](https://spectreconsole.net/best-practices)
 
 Medium to larger projects w/ actual TUI elements can use:
 
