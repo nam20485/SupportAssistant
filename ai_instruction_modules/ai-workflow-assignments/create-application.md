@@ -22,6 +22,8 @@ Your goal is to create an application based on a filled-out application template
 
 Your assignment is to create a complete new application based on a filled-out application template. This involves systematic analysis of requirements, careful implementation following established guidelines, and delivery of a production-ready application that meets all specified criteria.
 
+The application template can be found in the docs/ directory in a file called ai-new-app-template.md. The supporting files are linked to in that file and are also included in the same directory. It contains all the necessary details about the application you need to create, including features, components, and requirements.
+
 Specifically, you will:
 
 1. Analyze the filled-out application template and linked supporting documents to understand requirements and expectations and then use the task-based workflow process to create the application.
