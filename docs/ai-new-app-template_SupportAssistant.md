@@ -14,10 +14,10 @@ The foundational architecture is designed with a principal focus on three strate
 
 ## **Documents**
 
-(SupportAssistant) ImplementationTips.txt  
-(SupportAssistant) ImplementationPlan.txt  
-Index  
-Architecting AI for Open-Source Windows Applicatio…Local vs. Cloud Inference for Technical Support.md
+[ImplementationTips.txt](./ImplementationTips.txt)
+[ImplementationPlan.txt](./ImplementationPlan.txt)
+[Index](./Index.html)
+[Architecting AI for Open-Source Windows Applications](Architecting%20AI%20for%20Open-Source%20Windows%20Applications.md)
 
 ## **Target Platform Specification:**
 
