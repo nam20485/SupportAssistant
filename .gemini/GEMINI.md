@@ -27,6 +27,8 @@ The links below are part of a modular instruction system.
 Each instruction module file contains additional instructions focused on the topic specified by its title.
 Any (uncommented) file linked below should be read in fully and considered a part of the complete instruction set.
 
+**Always read all of the files linked below and all of the files in the list of files in the `ai_instruction_modules` directory.**
+
 [ai-quick-reference.md](../ai_instruction_modules/ai-quick-reference.md)
 [ai-terminal-management.md](../ai_instruction_modules/ai-terminal-management.md)
 [ai-workflow-config.md](../ai_instruction_modules/ai-workflow-config.md)
