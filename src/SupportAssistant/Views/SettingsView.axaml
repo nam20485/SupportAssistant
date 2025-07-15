@@ -1,0 +1,291 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:SupportAssistant.ViewModels"
+             x:Class="SupportAssistant.Views.SettingsView"
+             x:DataType="vm:SettingsViewModel">
+
+  <Design.DataContext>
+    <vm:SettingsViewModel/>
+  </Design.DataContext>
+
+  <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <StackPanel Margin="20" Spacing="20">
+      
+      <!-- Header -->
+      <TextBlock Text="Settings" FontSize="24" FontWeight="Bold" Margin="0,0,0,10"/>
+      
+      <!-- Status Message -->
+      <TextBlock Text="{Binding StatusMessage}" 
+                 IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                 Foreground="Orange" FontWeight="SemiBold" Margin="0,0,0,10"/>
+
+      <!-- General Settings -->
+      <Expander Header="General Settings" IsExpanded="True">
+        <StackPanel Spacing="15" Margin="10">
+          
+          <StackPanel Spacing="5">
+            <TextBlock Text="Theme" FontWeight="SemiBold"/>
+            <ComboBox ItemsSource="{Binding AvailableThemes}" 
+                      SelectedItem="{Binding Theme}" 
+                      Width="200" HorizontalAlignment="Left"/>
+            <TextBlock Text="Choose the application theme (Light, Dark, or Auto)" 
+                       FontSize="12" Foreground="Gray"/>
+          </StackPanel>
+
+          <StackPanel Spacing="5">
+            <TextBlock Text="Language" FontWeight="SemiBold"/>
+            <TextBox Text="{Binding Language}" Width="200" HorizontalAlignment="Left"/>
+            <TextBlock Text="Application language/locale (e.g., en-US)" 
+                       FontSize="12" Foreground="Gray"/>
+          </StackPanel>
+
+          <CheckBox IsChecked="{Binding StartWithSystem}" Content="Start with Windows"/>
+          <CheckBox IsChecked="{Binding MinimizeToTray}" Content="Minimize to system tray"/>
+          <CheckBox IsChecked="{Binding EnableAutoUpdate}" Content="Enable automatic updates"/>
+          
+        </StackPanel>
+      </Expander>
+
+      <!-- AI Settings -->
+      <Expander Header="AI Model Settings" IsExpanded="False">
+        <StackPanel Spacing="15" Margin="10">
+          
+          <StackPanel Spacing="5">
+            <TextBlock Text="Model Path" FontWeight="SemiBold"/>
+            <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,5">
+              <TextBox Text="{Binding ModelPath}" Grid.Column="0" Margin="0,0,10,0"/>
+              <Button Content="Browse..." Grid.Column="1" Command="{Binding BrowseModelPathCommand}"/>
+            </Grid>
+            <TextBlock Text="Path to the ONNX model file (phi-3-mini.onnx)" 
+                       FontSize="12" Foreground="Gray"/>
+          </StackPanel>
+
+          <StackPanel Spacing="5">
+            <TextBlock Text="Execution Provider" FontWeight="SemiBold"/>
+            <ComboBox ItemsSource="{Binding AvailableExecutionProviders}" 
+                      SelectedItem="{Binding ExecutionProvider}" 
+                      Width="200" HorizontalAlignment="Left"/>
+            <TextBlock Text="Hardware acceleration method (DirectML recommended for Windows)" 
+                       FontSize="12" Foreground="Gray"/>
+          </StackPanel>
+
+          <StackPanel Spacing="5">
+            <TextBlock Text="Max Context Length" FontWeight="SemiBold"/>
+            <NumericUpDown Value="{Binding MaxContextLength}" 
+                           Minimum="512" Maximum="8192" Increment="256"
+                           Width="200" HorizontalAlignment="Left"/>
+            <TextBlock Text="Maximum context length for prompts (512-8192)" 
+                       FontSize="12" Foreground="Gray"/>
+          </StackPanel>
+
+          <StackPanel Spacing="5">
+            <TextBlock Text="Temperature" FontWeight="SemiBold"/>
+            <NumericUpDown Value="{Binding Temperature}" 
+                           Minimum="0.0" Maximum="1.0" Increment="0.1" FormatString="F1"
+                           Width="200" HorizontalAlignment="Left"/>
+            <TextBlock Text="Controls randomness in generation (0.0 = deterministic, 1.0 = random)" 
+                       FontSize="12" Foreground="Gray"/>
+          </StackPanel>
+
+          <StackPanel Spacing="5">
+            <TextBlock Text="Top-P" FontWeight="SemiBold"/>
+            <NumericUpDown Value="{Binding TopP}" 
+                           Minimum="0.0" Maximum="1.0" Increment="0.1" FormatString="F1"
+                           Width="200" HorizontalAlignment="Left"/>
+            <TextBlock Text="Nucleus sampling parameter (0.0-1.0)" 
+                       FontSize="12" Foreground="Gray"/>
+          </StackPanel>
+
+          <StackPanel Spacing="5">
+            <TextBlock Text="Top-K" FontWeight="SemiBold"/>
+            <NumericUpDown Value="{Binding TopK}" 
+                           Minimum="1" Maximum="100" Increment="1"
+                           Width="200" HorizontalAlignment="Left"/>
+            <TextBlock Text="Top-K sampling parameter (1-100)" 
+                       FontSize="12" Foreground="Gray"/>
+          </StackPanel>
+
+          <StackPanel Spacing="5">
+            <TextBlock Text="Max Tokens" FontWeight="SemiBold"/>
+            <NumericUpDown Value="{Binding MaxTokens}" 
+                           Minimum="1" Maximum="4096" Increment="32"
+                           Width="200" HorizontalAlignment="Left"/>
+            <TextBlock Text="Maximum tokens to generate (1-4096)" 
+                       FontSize="12" Foreground="Gray"/>
+          </StackPanel>
+
+          <StackPanel Spacing="5">
+            <TextBlock Text="Inference Timeout (seconds)" FontWeight="SemiBold"/>
+            <NumericUpDown Value="{Binding InferenceTimeoutSeconds}" 
+                           Minimum="5" Maximum="300" Increment="5"
+                           Width="200" HorizontalAlignment="Left"/>
+            <TextBlock Text="Timeout for AI inference (5-300 seconds)" 
+                       FontSize="12" Foreground="Gray"/>
+          </StackPanel>
+
+          <CheckBox IsChecked="{Binding EnableStreaming}" Content="Enable response streaming"/>
+          
+        </StackPanel>
+      </Expander>
+
+      <!-- Knowledge Base Settings -->
+      <Expander Header="Knowledge Base Settings" IsExpanded="False">
+        <StackPanel Spacing="15" Margin="10">
+          
+          <StackPanel Spacing="5">
+            <TextBlock Text="Knowledge Base Path" FontWeight="SemiBold"/>
+            <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,5">
+              <TextBox Text="{Binding KnowledgeBasePath}" Grid.Column="0" Margin="0,0,10,0"/>
+              <Button Content="Browse..." Grid.Column="1" Command="{Binding BrowseKnowledgeBasePathCommand}"/>
+            </Grid>
+            <TextBlock Text="Directory containing knowledge base documents" 
+                       FontSize="12" Foreground="Gray"/>
+          </StackPanel>
+
+          <CheckBox IsChecked="{Binding AutoUpdateKnowledgeBase}" Content="Auto-update knowledge base"/>
+
+          <StackPanel Spacing="5">
+            <TextBlock Text="Update Interval (hours)" FontWeight="SemiBold"/>
+            <NumericUpDown Value="{Binding UpdateIntervalHours}" 
+                           Minimum="1" Maximum="168" Increment="1"
+                           Width="200" HorizontalAlignment="Left"/>
+            <TextBlock Text="How often to check for knowledge base updates (1-168 hours)" 
+                       FontSize="12" Foreground="Gray"/>
+          </StackPanel>
+
+          <StackPanel Spacing="5">
+            <TextBlock Text="Chunk Size" FontWeight="SemiBold"/>
+            <NumericUpDown Value="{Binding ChunkSize}" 
+                           Minimum="100" Maximum="5000" Increment="100"
+                           Width="200" HorizontalAlignment="Left"/>
+            <TextBlock Text="Text chunk size for processing (100-5000 characters)" 
+                       FontSize="12" Foreground="Gray"/>
+          </StackPanel>
+
+          <StackPanel Spacing="5">
+            <TextBlock Text="Chunk Overlap" FontWeight="SemiBold"/>
+            <NumericUpDown Value="{Binding ChunkOverlap}" 
+                           Minimum="0" Maximum="1000" Increment="50"
+                           Width="200" HorizontalAlignment="Left"/>
+            <TextBlock Text="Overlap between chunks for better context (0-1000 characters)" 
+                       FontSize="12" Foreground="Gray"/>
+          </StackPanel>
+
+          <StackPanel Spacing="5">
+            <TextBlock Text="Retrieval Top-K" FontWeight="SemiBold"/>
+            <NumericUpDown Value="{Binding RetrievalTopK}" 
+                           Minimum="1" Maximum="20" Increment="1"
+                           Width="200" HorizontalAlignment="Left"/>
+            <TextBlock Text="Number of top results to retrieve (1-20)" 
+                       FontSize="12" Foreground="Gray"/>
+          </StackPanel>
+
+          <StackPanel Spacing="5">
+            <TextBlock Text="Similarity Threshold" FontWeight="SemiBold"/>
+            <NumericUpDown Value="{Binding SimilarityThreshold}" 
+                           Minimum="0.0" Maximum="1.0" Increment="0.1" FormatString="F1"
+                           Width="200" HorizontalAlignment="Left"/>
+            <TextBlock Text="Minimum similarity for relevant results (0.0-1.0)" 
+                       FontSize="12" Foreground="Gray"/>
+          </StackPanel>
+          
+        </StackPanel>
+      </Expander>
+
+      <!-- UI Settings -->
+      <Expander Header="User Interface Settings" IsExpanded="False">
+        <StackPanel Spacing="15" Margin="10">
+          
+          <StackPanel Spacing="5">
+            <TextBlock Text="Font Size" FontWeight="SemiBold"/>
+            <NumericUpDown Value="{Binding FontSize}" 
+                           Minimum="8" Maximum="32" Increment="1"
+                           Width="200" HorizontalAlignment="Left"/>
+            <TextBlock Text="Chat message font size (8-32 pt)" 
+                       FontSize="12" Foreground="Gray"/>
+          </StackPanel>
+
+          <StackPanel Spacing="5">
+            <TextBlock Text="Font Family" FontWeight="SemiBold"/>
+            <TextBox Text="{Binding FontFamily}" Width="200" HorizontalAlignment="Left"/>
+            <TextBlock Text="Font family for chat messages" 
+                       FontSize="12" Foreground="Gray"/>
+          </StackPanel>
+
+          <StackPanel Spacing="5">
+            <TextBlock Text="Message Density" FontWeight="SemiBold"/>
+            <ComboBox ItemsSource="{Binding AvailableMessageDensities}" 
+                      SelectedItem="{Binding MessageDensity}" 
+                      Width="200" HorizontalAlignment="Left"/>
+            <TextBlock Text="Spacing between chat messages" 
+                       FontSize="12" Foreground="Gray"/>
+          </StackPanel>
+
+          <CheckBox IsChecked="{Binding ShowTimestamps}" Content="Show message timestamps"/>
+          <CheckBox IsChecked="{Binding ShowTypingIndicators}" Content="Show typing indicators"/>
+          <CheckBox IsChecked="{Binding EnableAutoScroll}" Content="Enable auto-scroll"/>
+          <CheckBox IsChecked="{Binding EnableSounds}" Content="Enable sound notifications"/>
+          
+        </StackPanel>
+      </Expander>
+
+      <!-- Performance Settings -->
+      <Expander Header="Performance Settings" IsExpanded="False">
+        <StackPanel Spacing="15" Margin="10">
+          
+          <StackPanel Spacing="5">
+            <TextBlock Text="CPU Threads" FontWeight="SemiBold"/>
+            <NumericUpDown Value="{Binding CpuThreads}" 
+                           Minimum="0" Maximum="64" Increment="1"
+                           Width="200" HorizontalAlignment="Left"/>
+            <TextBlock Text="Number of CPU threads to use (0 = auto)" 
+                       FontSize="12" Foreground="Gray"/>
+          </StackPanel>
+
+          <StackPanel Spacing="5">
+            <TextBlock Text="Max Memory (MB)" FontWeight="SemiBold"/>
+            <NumericUpDown Value="{Binding MaxMemoryMB}" 
+                           Minimum="0" Maximum="32768" Increment="512"
+                           Width="200" HorizontalAlignment="Left"/>
+            <TextBlock Text="Maximum memory usage in MB (0 = unlimited)" 
+                       FontSize="12" Foreground="Gray"/>
+          </StackPanel>
+
+          <StackPanel Spacing="5">
+            <TextBlock Text="Max Cache Size (MB)" FontWeight="SemiBold"/>
+            <NumericUpDown Value="{Binding MaxCacheSizeMB}" 
+                           Minimum="10" Maximum="1024" Increment="10"
+                           Width="200" HorizontalAlignment="Left"/>
+            <TextBlock Text="Maximum cache size for embeddings (10-1024 MB)" 
+                       FontSize="12" Foreground="Gray"/>
+          </StackPanel>
+
+          <StackPanel Spacing="5">
+            <TextBlock Text="Log Level" FontWeight="SemiBold"/>
+            <ComboBox ItemsSource="{Binding AvailableLogLevels}" 
+                      SelectedItem="{Binding LogLevel}" 
+                      Width="200" HorizontalAlignment="Left"/>
+            <TextBlock Text="Logging verbosity level" 
+                       FontSize="12" Foreground="Gray"/>
+          </StackPanel>
+
+          <CheckBox IsChecked="{Binding EnableGpuAcceleration}" Content="Enable GPU acceleration"/>
+          <CheckBox IsChecked="{Binding CacheEmbeddings}" Content="Cache embeddings for faster retrieval"/>
+          
+        </StackPanel>
+      </Expander>
+
+      <!-- Action Buttons -->
+      <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right" Margin="0,20,0,0">
+        <Button Content="Reset to Defaults" Command="{Binding ResetCommand}" 
+                Background="#FF6B6B" Foreground="White" Padding="15,8"/>
+        <Button Content="Cancel" Command="{Binding CancelCommand}" 
+                Background="Gray" Foreground="White" Padding="15,8"/>
+        <Button Content="Save Settings" Command="{Binding SaveCommand}" 
+                Background="#4CAF50" Foreground="White" Padding="15,8"/>
+      </StackPanel>
+      
+    </StackPanel>
+  </ScrollViewer>
+  
+</UserControl>

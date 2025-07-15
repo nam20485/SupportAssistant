@@ -1,0 +1,246 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:SupportAssistant.ViewModels"
+             xmlns:models="using:SupportAssistant.Models"
+             xmlns:converters="using:SupportAssistant.Converters"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="SupportAssistant.Views.ChatView"
+             x:DataType="vm:ChatViewModel">
+
+  <UserControl.Resources>
+    <converters:MessageTypeToColorConverter x:Key="MessageTypeToColorConverter"/>
+    <converters:MessageTypeToAlignmentConverter x:Key="MessageTypeToAlignmentConverter"/>
+    <converters:MessageTypeToWidthConverter x:Key="MessageTypeToWidthConverter"/>
+    <converters:MessageTypeToShowHeaderConverter x:Key="MessageTypeToShowHeaderConverter"/>
+    <converters:StringNotEmptyConverter x:Key="StringNotEmptyConverter"/>
+  </UserControl.Resources>
+
+  <Design.DataContext>
+    <vm:ChatViewModel />
+  </Design.DataContext>
+
+  <Grid RowDefinitions="*,Auto,Auto,Auto">
+    
+    <!-- Chat Messages Area -->
+    <ScrollViewer Grid.Row="0" Margin="10" Name="MessagesScrollViewer" 
+                  ScrollViewer.VerticalScrollBarVisibility="Auto"
+                  ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+      <StackPanel>
+        <ItemsControl ItemsSource="{Binding Messages}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="models:ChatMessage">
+              <Border Margin="5" Padding="10" CornerRadius="8" 
+                      Background="{Binding Type, Converter={StaticResource MessageTypeToColorConverter}}"
+                      HorizontalAlignment="{Binding Type, Converter={StaticResource MessageTypeToAlignmentConverter}}"
+                      MaxWidth="{Binding Type, Converter={StaticResource MessageTypeToWidthConverter}}">
+                
+                <StackPanel>
+                  <!-- Message Header with Type and Actions -->
+                  <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,5"
+                        IsVisible="{Binding Type, Converter={StaticResource MessageTypeToShowHeaderConverter}}">
+                    <TextBlock Grid.Column="0" 
+                               Text="{Binding Type}" 
+                               FontSize="11" 
+                               FontWeight="SemiBold"
+                               Foreground="#666"/>
+                    <Button Grid.Column="1" 
+                            Content="📋" 
+                            FontSize="12"
+                            Padding="4,2"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).CopyMessageCommand}"
+                            CommandParameter="{Binding Content}"
+                            ToolTip.Tip="Copy message"
+                            Cursor="Hand"/>
+                  </Grid>
+                  
+                  <!-- Message Content -->
+                  <SelectableTextBlock Text="{Binding Content}" 
+                                       TextWrapping="Wrap" 
+                                       FontSize="14"/>
+                  
+                  <!-- Message Footer -->
+                  <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:MMM dd, HH:mm}'}" 
+                             FontSize="10" 
+                             Foreground="Gray" 
+                             HorizontalAlignment="Right"
+                             Margin="0,5,0,0"/>
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        
+        <!-- Typing Indicator -->
+        <Border IsVisible="{Binding ShowTypingIndicator}"
+                Margin="5" Padding="10" CornerRadius="8"
+                Background="#F0F0F0" HorizontalAlignment="Left"
+                MaxWidth="120">
+          <StackPanel Orientation="Horizontal">
+            <TextBlock Text="SupportAssistant is typing" 
+                       FontSize="12" FontStyle="Italic" 
+                       Foreground="Gray" VerticalAlignment="Center"/>
+            <StackPanel Orientation="Horizontal" Margin="8,0,0,0">
+              <Ellipse Width="4" Height="4" Fill="Gray" Margin="1">
+                <Ellipse.Styles>
+                  <Style Selector="Ellipse">
+                    <Style.Animations>
+                      <Animation Duration="0:0:1.5" IterationCount="Infinite">
+                        <KeyFrame Cue="0%">
+                          <Setter Property="Opacity" Value="0.3"/>
+                        </KeyFrame>
+                        <KeyFrame Cue="33%">
+                          <Setter Property="Opacity" Value="1"/>
+                        </KeyFrame>
+                        <KeyFrame Cue="66%">
+                          <Setter Property="Opacity" Value="0.3"/>
+                        </KeyFrame>
+                      </Animation>
+                    </Style.Animations>
+                  </Style>
+                </Ellipse.Styles>
+              </Ellipse>
+              <Ellipse Width="4" Height="4" Fill="Gray" Margin="1">
+                <Ellipse.Styles>
+                  <Style Selector="Ellipse">
+                    <Style.Animations>
+                      <Animation Duration="0:0:1.5" IterationCount="Infinite" Delay="0:0:0.2">
+                        <KeyFrame Cue="0%">
+                          <Setter Property="Opacity" Value="0.3"/>
+                        </KeyFrame>
+                        <KeyFrame Cue="33%">
+                          <Setter Property="Opacity" Value="1"/>
+                        </KeyFrame>
+                        <KeyFrame Cue="66%">
+                          <Setter Property="Opacity" Value="0.3"/>
+                        </KeyFrame>
+                      </Animation>
+                    </Style.Animations>
+                  </Style>
+                </Ellipse.Styles>
+              </Ellipse>
+              <Ellipse Width="4" Height="4" Fill="Gray" Margin="1">
+                <Ellipse.Styles>
+                  <Style Selector="Ellipse">
+                    <Style.Animations>
+                      <Animation Duration="0:0:1.5" IterationCount="Infinite" Delay="0:0:0.4">
+                        <KeyFrame Cue="0%">
+                          <Setter Property="Opacity" Value="0.3"/>
+                        </KeyFrame>
+                        <KeyFrame Cue="33%">
+                          <Setter Property="Opacity" Value="1"/>
+                        </KeyFrame>
+                        <KeyFrame Cue="66%">
+                          <Setter Property="Opacity" Value="0.3"/>
+                        </KeyFrame>
+                      </Animation>
+                    </Style.Animations>
+                  </Style>
+                </Ellipse.Styles>
+              </Ellipse>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+
+    <!-- Input Area -->
+    <Grid Grid.Row="1" Margin="10" ColumnDefinitions="*,Auto,Auto,Auto">
+      <TextBox Grid.Column="0" 
+               Text="{Binding UserInput}" 
+               Watermark="Type your question here... (Enter to send, Shift+Enter for new line)"
+               AcceptsReturn="True"
+               TextWrapping="Wrap"
+               MaxHeight="100"
+               Name="InputTextBox"
+               KeyDown="InputTextBox_KeyDown"/>
+      
+      <Button Grid.Column="1" 
+              Content="Send" 
+              Command="{Binding SendMessageCommand}"
+              IsDefault="True"
+              Margin="5,0,0,0"
+              Padding="15,5"
+              ToolTip.Tip="Send message (Ctrl+Enter)"/>
+      
+      <Button Grid.Column="2" 
+              Content="Retry"
+              Command="{Binding RetryLastMessageCommand}"
+              Margin="5,0,0,0"
+              Padding="10,5"
+              ToolTip.Tip="Retry last message"/>
+      
+      <Button Grid.Column="3" 
+              Content="Clear"
+              Command="{Binding ClearChatCommand}"
+              Margin="5,0,0,0"
+              Padding="10,5"
+              ToolTip.Tip="Clear chat (Ctrl+L)"/>
+    </Grid>
+
+    <!-- Enhanced Progress Area -->
+    <Border Grid.Row="2" 
+            Background="#F8F8F8" 
+            Padding="10,8"
+            BorderBrush="#E0E0E0" 
+            BorderThickness="0,1,0,0"
+            IsVisible="{Binding IsProcessing}">
+      <Grid RowDefinitions="Auto,Auto">
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+          <StackPanel Grid.Column="0" Orientation="Horizontal">
+            <TextBlock Text="{Binding ProcessingStage}" 
+                       FontSize="12" 
+                       FontWeight="Medium"
+                       Foreground="#333"/>
+            <TextBlock Text=" • " 
+                       FontSize="12" 
+                       Foreground="Gray"
+                       IsVisible="{Binding ProcessingStage, Converter={StaticResource StringNotEmptyConverter}}"/>
+            <TextBlock Text="{Binding ProcessingProgress, StringFormat='{}{0}%'}" 
+                       FontSize="12" 
+                       Foreground="Gray"/>
+          </StackPanel>
+          
+          <Button Grid.Column="1" 
+                  Content="Cancel" 
+                  Command="{Binding CancelProcessingCommand}"
+                  FontSize="11"
+                  Padding="8,2"
+                  ToolTip.Tip="Cancel processing (Esc)"/>
+        </Grid>
+        
+        <ProgressBar Grid.Row="1" 
+                     Value="{Binding ProcessingProgress}"
+                     Minimum="0" Maximum="100"
+                     Height="3" 
+                     Margin="0,5,0,0"/>
+      </Grid>
+    </Border>
+
+    <!-- Status Bar -->
+    <Border Grid.Row="3" 
+            Background="#FAFAFA" 
+            Padding="10,5"
+            BorderBrush="#E0E0E0" 
+            BorderThickness="0,1,0,0">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Grid.Column="0" 
+                   Text="{Binding StatusMessage}" 
+                   FontSize="12" 
+                   Foreground="Gray"/>
+        
+        <StackPanel Grid.Column="1" Orientation="Horizontal">
+          <TextBlock Text="💡 " FontSize="12" Foreground="Gray"/>
+          <TextBlock Text="Ctrl+L: Clear • Esc: Cancel • Enter: Send" 
+                     FontSize="11" 
+                     Foreground="Gray"/>
+        </StackPanel>
+      </Grid>
+    </Border>
+    
+  </Grid>
+
+</UserControl>

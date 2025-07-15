@@ -1,0 +1,17 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:SupportAssistant.ViewModels"
+        xmlns:views="using:SupportAssistant.Views"
+        x:Class="SupportAssistant.Views.SettingsWindow"
+        x:DataType="vm:SettingsViewModel"
+        Title="Settings - SupportAssistant"
+        Width="800" 
+        Height="600"
+        WindowStartupLocation="CenterOwner"
+        Icon="/Assets/avalonia-logo.ico">
+    
+    <Grid>
+        <views:SettingsView/>
+    </Grid>
+    
+</Window>

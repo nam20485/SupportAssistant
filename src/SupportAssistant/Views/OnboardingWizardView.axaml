@@ -1,0 +1,257 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SupportAssistant.ViewModels"
+             xmlns:converters="using:SupportAssistant.Converters"
+             x:Class="SupportAssistant.Views.OnboardingWizardView"
+             x:DataType="vm:OnboardingWizardViewModel">
+
+  <Grid RowDefinitions="Auto,*,Auto,Auto">
+    
+    <!-- Header -->
+    <Border Grid.Row="0" 
+            Background="#2196F3" 
+            Padding="20">
+      <StackPanel>
+        <TextBlock Text="{Binding CurrentStepTitle}" 
+                   FontSize="24" 
+                   FontWeight="Bold" 
+                   Foreground="White"/>
+        <TextBlock Text="{Binding CurrentStepDescription}" 
+                   FontSize="14" 
+                   Foreground="#E3F2FD" 
+                   Margin="0,5,0,0"/>
+      </StackPanel>
+    </Border>
+
+    <!-- Progress Indicator -->
+    <Border Grid.Row="1" Padding="20,10">
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="20">
+        <Border Width="30" Height="30" CornerRadius="15" 
+                Background="{Binding CurrentStep, Converter={x:Static converters:StepToColorConverter.Instance}, ConverterParameter=0}">
+          <TextBlock Text="1" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontWeight="Bold"/>
+        </Border>
+        <Border Width="3" Height="3" CornerRadius="2" Background="Gray" VerticalAlignment="Center"/>
+        <Border Width="30" Height="30" CornerRadius="15" 
+                Background="{Binding CurrentStep, Converter={x:Static converters:StepToColorConverter.Instance}, ConverterParameter=1}">
+          <TextBlock Text="2" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontWeight="Bold"/>
+        </Border>
+        <Border Width="3" Height="3" CornerRadius="2" Background="Gray" VerticalAlignment="Center"/>
+        <Border Width="30" Height="30" CornerRadius="15" 
+                Background="{Binding CurrentStep, Converter={x:Static converters:StepToColorConverter.Instance}, ConverterParameter=2}">
+          <TextBlock Text="3" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontWeight="Bold"/>
+        </Border>
+        <Border Width="3" Height="3" CornerRadius="2" Background="Gray" VerticalAlignment="Center"/>
+        <Border Width="30" Height="30" CornerRadius="15" 
+                Background="{Binding CurrentStep, Converter={x:Static converters:StepToColorConverter.Instance}, ConverterParameter=3}">
+          <TextBlock Text="✓" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontWeight="Bold"/>
+        </Border>
+      </StackPanel>
+    </Border>
+
+    <!-- Content Area -->
+    <ScrollViewer Grid.Row="2" Padding="40,20">
+      <Grid>
+      
+        <!-- Step 0: Welcome -->
+        <StackPanel IsVisible="{Binding CurrentStep, Converter={x:Static converters:EqualityConverter.Instance}, ConverterParameter=0}" 
+                    Spacing="20">
+        <TextBlock Text="🤖" FontSize="64" HorizontalAlignment="Center"/>
+        <TextBlock Text="Welcome to SupportAssistant!" 
+                   FontSize="28" 
+                   FontWeight="Bold" 
+                   HorizontalAlignment="Center"/>
+        <TextBlock TextWrapping="Wrap" 
+                   FontSize="16" 
+                   HorizontalAlignment="Center" 
+                   MaxWidth="600">
+          SupportAssistant is your AI-powered technical support assistant. This setup wizard will help you configure the essential settings to get started.
+        </TextBlock>
+        <TextBlock TextWrapping="Wrap" 
+                   FontSize="14" 
+                   HorizontalAlignment="Center" 
+                   MaxWidth="600" 
+                   Foreground="Gray">
+          We'll guide you through configuring your AI model and knowledge base. The entire process should take just a few minutes.
+        </TextBlock>
+        <CheckBox Content="I understand and want to continue" 
+                  HorizontalAlignment="Center"
+                  IsChecked="{Binding WelcomeAcknowledged}"
+                  Margin="0,20,0,0"/>
+      </StackPanel>
+
+      <!-- Step 1: Model Configuration -->
+      <StackPanel IsVisible="{Binding CurrentStep, Converter={x:Static converters:EqualityConverter.Instance}, ConverterParameter=1}" 
+                  Spacing="20">
+        <TextBlock Text="AI Model Configuration" 
+                   FontSize="24" 
+                   FontWeight="Bold"/>
+        <TextBlock TextWrapping="Wrap" 
+                   FontSize="14" 
+                   Foreground="Gray">
+          Configure where your AI models will be stored and which execution provider to use for optimal performance.
+        </TextBlock>
+
+        <StackPanel Spacing="10">
+          <TextBlock Text="Model Storage Path" FontWeight="SemiBold"/>
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBox Grid.Column="0" 
+                     Text="{Binding ModelPath}" 
+                     Watermark="Enter the path where AI models will be stored"/>
+            <Button Grid.Column="1" 
+                    Content="Browse..." 
+                    Command="{Binding BrowseModelPathCommand}"
+                    Margin="10,0,0,0"/>
+          </Grid>
+          <TextBlock Text="This directory will store AI model files. It will be created automatically if it doesn't exist." 
+                     FontSize="12" 
+                     Foreground="Gray"/>
+        </StackPanel>
+
+        <StackPanel Spacing="10">
+          <TextBlock Text="Execution Provider" FontWeight="SemiBold"/>
+          <ComboBox ItemsSource="{Binding AvailableExecutionProviders}" 
+                    SelectedItem="{Binding SelectedExecutionProvider}" 
+                    Width="200" 
+                    HorizontalAlignment="Left"/>
+          <TextBlock Text="CPU: Works on all systems (slower), CUDA: NVIDIA GPUs (faster), DirectML: Windows GPUs" 
+                     FontSize="12" 
+                     Foreground="Gray"/>
+        </StackPanel>
+
+        <Button Content="Validate Path" 
+                Command="{Binding ValidateModelPathCommand}"
+                HorizontalAlignment="Left"/>
+      </StackPanel>
+
+      <!-- Step 2: Knowledge Base Setup -->
+      <StackPanel IsVisible="{Binding CurrentStep, Converter={x:Static converters:EqualityConverter.Instance}, ConverterParameter=2}" 
+                  Spacing="20">
+        <TextBlock Text="Knowledge Base Setup" 
+                   FontSize="24" 
+                   FontWeight="Bold"/>
+        <TextBlock TextWrapping="Wrap" 
+                   FontSize="14" 
+                   Foreground="Gray">
+          Set up your knowledge base directory where your documentation and reference materials will be stored and indexed.
+        </TextBlock>
+
+        <StackPanel Spacing="10">
+          <TextBlock Text="Knowledge Base Path" FontWeight="SemiBold"/>
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBox Grid.Column="0" 
+                     Text="{Binding KnowledgeBasePath}" 
+                     Watermark="Enter the path for your knowledge base"/>
+            <Button Grid.Column="1" 
+                    Content="Browse..." 
+                    Command="{Binding BrowseKnowledgeBasePathCommand}"
+                    Margin="10,0,0,0"/>
+          </Grid>
+          <TextBlock Text="This directory will contain your documentation files (PDF, TXT, MD). It will be created automatically if it doesn't exist." 
+                     FontSize="12" 
+                     Foreground="Gray"/>
+        </StackPanel>
+
+        <CheckBox Content="Create sample knowledge base file" 
+                  IsChecked="{Binding CreateSampleKnowledgeBase}"/>
+        <TextBlock Text="This will create a getting started guide in your knowledge base to help you understand how to use SupportAssistant." 
+                   FontSize="12" 
+                   Foreground="Gray"
+                   Margin="25,0,0,0"/>
+
+        <Button Content="Validate Path" 
+                Command="{Binding ValidateModelPathCommand}"
+                HorizontalAlignment="Left"/>
+      </StackPanel>
+
+      <!-- Step 3: Setup Complete -->
+      <StackPanel IsVisible="{Binding CurrentStep, Converter={x:Static converters:EqualityConverter.Instance}, ConverterParameter=3}" 
+                  Spacing="20">
+        <TextBlock Text="🎉" FontSize="64" HorizontalAlignment="Center"/>
+        <TextBlock Text="Setup Complete!" 
+                   FontSize="28" 
+                   FontWeight="Bold" 
+                   HorizontalAlignment="Center"/>
+        <TextBlock TextWrapping="Wrap" 
+                   FontSize="16" 
+                   HorizontalAlignment="Center" 
+                   MaxWidth="600">
+          Congratulations! SupportAssistant is now configured and ready to use.
+        </TextBlock>
+
+        <Border Background="#E8F5E8" 
+                BorderBrush="#4CAF50" 
+                BorderThickness="1" 
+                CornerRadius="8" 
+                Padding="15"
+                MaxWidth="600">
+          <StackPanel Spacing="10">
+            <TextBlock Text="Configuration Summary:" FontWeight="Bold"/>
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <TextBlock Text="• Model Path:" FontWeight="SemiBold"/>
+              <TextBlock Text="{Binding ModelPath}"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <TextBlock Text="• Execution Provider:" FontWeight="SemiBold"/>
+              <TextBlock Text="{Binding SelectedExecutionProvider}"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <TextBlock Text="• Knowledge Base:" FontWeight="SemiBold"/>
+              <TextBlock Text="{Binding KnowledgeBasePath}"/>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <TextBlock TextWrapping="Wrap" 
+                   FontSize="14" 
+                   HorizontalAlignment="Center" 
+                   MaxWidth="600" 
+                   Foreground="Gray">
+          You can change these settings later in File > Settings if needed.
+        </TextBlock>
+      </StackPanel>
+
+      </Grid>
+    </ScrollViewer>
+
+    <!-- Status and Navigation -->
+    <Border Grid.Row="3" 
+            BorderBrush="LightGray" 
+            BorderThickness="0,1,0,0" 
+            Padding="20">
+      <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto">
+        
+        <!-- Status Message -->
+        <TextBlock Grid.Column="0" 
+                   Text="{Binding StatusMessage}" 
+                   VerticalAlignment="Center"
+                   Foreground="{Binding StatusMessage, Converter={x:Static converters:StatusToColorConverter.Instance}}"/>
+
+        <!-- Navigation Buttons -->
+        <Button Grid.Column="1" 
+                Content="Cancel" 
+                Command="{Binding CancelCommand}"
+                Margin="0,0,10,0"/>
+        <Button Grid.Column="2" 
+                Content="← Back" 
+                Command="{Binding BackCommand}"
+                IsEnabled="{Binding CanGoBack}"
+                Margin="0,0,10,0"/>
+        <Button Grid.Column="3" 
+                Content="Next →" 
+                Command="{Binding NextCommand}"
+                IsEnabled="{Binding CanGoNext}"
+                IsVisible="{Binding !CanFinish}"
+                Margin="0,0,10,0"/>
+        <Button Grid.Column="4" 
+                Content="Finish" 
+                Command="{Binding FinishCommand}"
+                IsEnabled="{Binding CanFinish}"
+                IsVisible="{Binding CanFinish}"
+                Classes="accent"/>
+        
+      </Grid>
+    </Border>
+
+  </Grid>
+
+</UserControl>

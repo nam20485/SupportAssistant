@@ -1,0 +1,18 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:SupportAssistant.ViewModels"
+        xmlns:views="using:SupportAssistant.Views"
+        x:Class="SupportAssistant.Views.OnboardingWizardWindow"
+        x:DataType="vm:OnboardingWizardViewModel"
+        Title="SupportAssistant Setup Wizard"
+        Width="900" 
+        Height="700"
+        WindowStartupLocation="CenterScreen"
+        Icon="/Assets/avalonia-logo.ico"
+        CanResize="False">
+    
+    <Grid>
+        <views:OnboardingWizardView/>
+    </Grid>
+    
+</Window>

@@ -1,0 +1,77 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SupportAssistant.ViewModels"
+             x:Class="SupportAssistant.Views.BackgroundTaskView"
+             x:DataType="vm:BackgroundTaskViewModel"
+             IsVisible="{Binding IsVisible}">
+
+  <Border Background="White" 
+          BorderBrush="LightGray" 
+          BorderThickness="1" 
+          CornerRadius="8" 
+          Padding="20"
+          Margin="20"
+          BoxShadow="0 4 8 0 #40000000"
+          MaxWidth="400">
+    
+    <StackPanel Spacing="15">
+      
+      <!-- Header -->
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Grid.Column="0" 
+                   Text="Background Initialization" 
+                   FontSize="16" 
+                   FontWeight="Bold"/>
+        <Button Grid.Column="1" 
+                Content="✕" 
+                Command="{Binding DismissCommand}"
+                Width="24" 
+                Height="24"
+                Background="Transparent"
+                BorderThickness="0"/>
+      </Grid>
+      
+      <!-- Progress Bar -->
+      <StackPanel IsVisible="{Binding IsRunning}" Spacing="8">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Grid.Column="0" 
+                     Text="{Binding StatusMessage}" 
+                     FontSize="14"/>
+          <TextBlock Grid.Column="1" 
+                     Text="{Binding ProgressText}" 
+                     FontSize="14" 
+                     FontWeight="SemiBold"/>
+        </Grid>
+        
+        <ProgressBar Value="{Binding Progress}" 
+                     Minimum="0" 
+                     Maximum="1" 
+                     Height="8"/>
+      </StackPanel>
+      
+      <!-- Status Message (when not running) -->
+      <TextBlock IsVisible="{Binding !IsRunning}" 
+                 Text="{Binding StatusMessage}" 
+                 FontSize="14"
+                 TextWrapping="Wrap"/>
+      
+      <!-- Action Buttons -->
+      <Grid ColumnDefinitions="*,10,*">
+        <Button Grid.Column="0" 
+                Content="Cancel" 
+                Command="{Binding CancelCommand}"
+                IsVisible="{Binding IsRunning}"
+                HorizontalAlignment="Stretch"/>
+        <Button Grid.Column="2" 
+                Content="Retry" 
+                Command="{Binding StartInitializationCommand}"
+                IsVisible="{Binding !IsRunning}"
+                Classes="accent"
+                HorizontalAlignment="Stretch"/>
+      </Grid>
+      
+    </StackPanel>
+    
+  </Border>
+
+</UserControl>
