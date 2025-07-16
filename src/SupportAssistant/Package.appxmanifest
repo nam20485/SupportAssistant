@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
+  IgnorableNamespaces="uap rescap desktop">
+
+  <Identity
+    Name="SupportAssistant"
+    Publisher="CN=Open Source"
+    Version="1.0.0.0" />
+
+  <mp:PhoneIdentity PhoneProductId="00000000-0000-0000-0000-000000000000" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
+
+  <Properties>
+    <DisplayName>SupportAssistant</DisplayName>
+    <PublisherDisplayName>Open Source</PublisherDisplayName>
+    <Logo>Assets\avalonia-logo.ico</Logo>
+    <Description>Intelligent technical assistance desktop application with local AI and privacy-focused architecture</Description>
+  </Properties>
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Universal" MinVersion="10.0.17763.0" MaxVersionTested="10.0.22631.0" />
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.22631.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="x-generate"/>
+  </Resources>
+
+  <Applications>
+    <Application Id="App"
+      Executable="SupportAssistant.exe"
+      EntryPoint="$targetentrypoint$">
+      <uap:VisualElements
+        DisplayName="SupportAssistant"
+        Description="Intelligent technical assistance with local AI"
+        BackgroundColor="transparent"
+        Square150x150Logo="Assets\avalonia-logo.ico"
+        Square44x44Logo="Assets\avalonia-logo.ico">
+        <uap:DefaultTile Wide310x150Logo="Assets\avalonia-logo.ico"/>
+        <uap:SplashScreen Image="Assets\avalonia-logo.ico" />
+      </uap:VisualElements>
+
+      <Extensions>
+        <desktop:Extension Category="windows.fullTrustProcess" Executable="SupportAssistant.exe" />
+      </Extensions>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <rescap:Capability Name="runFullTrust" />
+    <Capability Name="internetClient" />
+    <Capability Name="privateNetworkClientServer" />
+  </Capabilities>
+</Package>

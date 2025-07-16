@@ -1,0 +1,71 @@
+<Project>
+  <!-- Global build properties for SupportAssistant solution -->
+  
+  <PropertyGroup>
+    <!-- Version Information -->
+    <VersionMajor>1</VersionMajor>
+    <VersionMinor>0</VersionMinor>
+    <VersionPatch>0</VersionPatch>
+    <VersionBuild>0</VersionBuild>
+    
+    <!-- Semantic Version -->
+    <Version>$(VersionMajor).$(VersionMinor).$(VersionPatch)</Version>
+    <AssemblyVersion>$(VersionMajor).$(VersionMinor).$(VersionPatch).$(VersionBuild)</AssemblyVersion>
+    <FileVersion>$(AssemblyVersion)</FileVersion>
+    <AssemblyInformationalVersion>$(Version)</AssemblyInformationalVersion>
+    
+    <!-- Product Information -->
+    <Product>SupportAssistant</Product>
+    <Company>Open Source</Company>
+    <Copyright>Copyright © 2025 Open Source Contributors</Copyright>
+    <Description>Intelligent technical assistance desktop application with local AI</Description>
+    
+    <!-- Build Configuration -->
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsAsErrors />
+    
+    <!-- Performance -->
+    <TieredCompilation>true</TieredCompilation>
+    <TieredCompilationQuickJit>true</TieredCompilationQuickJit>
+    
+    <!-- Distribution Defaults -->
+    <PublishSingleFile Condition="'$(Configuration)' == 'Release'">true</PublishSingleFile>
+    <PublishTrimmed Condition="'$(Configuration)' == 'Release'">false</PublishTrimmed>
+    <IncludeNativeLibrariesForSelfExtract Condition="'$(Configuration)' == 'Release'">true</IncludeNativeLibrariesForSelfExtract>
+    <PublishReadyToRun Condition="'$(Configuration)' == 'Release'">true</PublishReadyToRun>
+  </PropertyGroup>
+  
+  <!-- NuGet Package Properties -->
+  <PropertyGroup>
+    <PackageId>$(AssemblyName)</PackageId>
+    <PackageVersion>$(Version)</PackageVersion>
+    <PackageDescription>$(Description)</PackageDescription>
+    <PackageAuthors>Open Source Contributors</PackageAuthors>
+    <PackageCompany>$(Company)</PackageCompany>
+    <PackageCopyright>$(Copyright)</PackageCopyright>
+    <PackageProjectUrl>https://github.com/nam20485/SupportAssistant</PackageProjectUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageTags>ai;assistant;desktop;avalonia;onnx;local;privacy</PackageTags>
+    <RepositoryUrl>https://github.com/nam20485/SupportAssistant.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+  
+  <!-- Source Link -->
+  <PropertyGroup>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+  
+  <!-- Deterministic builds -->
+  <PropertyGroup Condition="'$(CI)' == 'true'">
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+  
+</Project>

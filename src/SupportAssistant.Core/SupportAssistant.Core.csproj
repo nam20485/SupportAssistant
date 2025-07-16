@@ -6,6 +6,9 @@
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsAsErrors />
+    
+    <!-- Disable trimming warnings for now - will be fixed with JsonSourceGenerator -->
+    <WarningsNotAsErrors>IL2026;IL2070;IL2075</WarningsNotAsErrors>
   </PropertyGroup>
 
   <ItemGroup>
