@@ -77,7 +77,11 @@ public class OnboardingWizardViewModel : ViewModelBase
     public bool WelcomeAcknowledged
     {
         get => _welcomeAcknowledged;
-        set => this.RaiseAndSetIfChanged(ref _welcomeAcknowledged, value);
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _welcomeAcknowledged, value);
+            this.RaisePropertyChanged(nameof(CanGoNext));
+        }
     }
 
     // Step 2: Model Configuration

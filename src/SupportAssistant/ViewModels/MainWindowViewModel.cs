@@ -17,26 +17,15 @@ public partial class MainWindowViewModel : ViewModelBase
         IContextRetrievalService contextRetrieval,
         IResponseGenerationService responseGenerationService,
         SettingsViewModel settingsViewModel,
-        BackgroundTaskViewModel backgroundTaskViewModel, ChatViewModel chatViewModel, ReactiveCommand<Unit, Unit> openSettingsCommand, ReactiveCommand<Unit, Unit> exitCommand, ReactiveCommand<Unit, Unit> aboutCommand)
+        BackgroundTaskViewModel backgroundTaskViewModel)
     {
         _chatViewModel = new ChatViewModel(queryProcessor, contextRetrieval, responseGenerationService);
         _settingsViewModel = settingsViewModel;
         _backgroundTaskViewModel = backgroundTaskViewModel;
-        
+
         OpenSettingsCommand = ReactiveCommand.CreateFromTask(OpenSettings);
         ExitCommand = ReactiveCommand.Create(Exit);
         AboutCommand = ReactiveCommand.CreateFromTask(ShowAbout);
-    }
-
-    public MainWindowViewModel(ChatViewModel chatViewModel, SettingsViewModel settingsViewModel, BackgroundTaskViewModel backgroundTaskViewModel, ReactiveCommand<Unit, Unit> openSettingsCommand, ReactiveCommand<Unit, Unit> exitCommand, ReactiveCommand<Unit, Unit> aboutCommand)
-    {
-        _chatViewModel = chatViewModel;
-        _settingsViewModel = settingsViewModel;
-        _backgroundTaskViewModel = backgroundTaskViewModel;
-        OpenSettingsCommand = openSettingsCommand;
-        ExitCommand = exitCommand;
-        AboutCommand = aboutCommand;
-        //throw new System.NotImplementedException();
     }
 
     public ChatViewModel Chat => _chatViewModel;

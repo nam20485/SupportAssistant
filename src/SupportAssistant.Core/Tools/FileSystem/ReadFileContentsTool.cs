@@ -100,21 +100,18 @@ namespace SupportAssistant.Core.Tools.FileSystem
 
                 using var reader = new StreamReader(fullPath, encoding);
                 
-                while (lineCount < maxLines && !reader.EndOfStream)
+                string? line;
+                while (lineCount < maxLines && (line = await reader.ReadLineAsync()) != null)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    
-                    var line = await reader.ReadLineAsync();
-                    if (line != null)
-                    {
-                        lines.Add(line);
-                        lineCount++;
-                    }
+                    lines.Add(line);
+                    lineCount++;
                 }
 
-                if (!reader.EndOfStream)
+                if (lineCount >= maxLines)
                 {
-                    isTruncated = true;
+                    var probe = await reader.ReadLineAsync();
+                    isTruncated = probe != null;
                 }
 
                 var result = new FileReadResult
