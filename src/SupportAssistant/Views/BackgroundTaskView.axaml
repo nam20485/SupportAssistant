@@ -5,8 +5,8 @@
              x:DataType="vm:BackgroundTaskViewModel"
              IsVisible="{Binding IsVisible}">
 
-  <Border Background="White" 
-          BorderBrush="LightGray" 
+  <Border Background="{DynamicResource AppCardBackground}" 
+          BorderBrush="{DynamicResource AppBorderBrush}" 
           BorderThickness="1" 
           CornerRadius="8" 
           Padding="20"

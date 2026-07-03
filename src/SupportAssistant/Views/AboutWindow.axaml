@@ -21,7 +21,7 @@
             <TextBlock Text="Version 1.0.0" 
                       FontSize="14" 
                       HorizontalAlignment="Center"
-                      Foreground="Gray"/>
+                      Foreground="{DynamicResource AppMutedForeground}"/>
             
             <TextBlock Text="AI-powered technical support assistant" 
                       FontSize="14" 
@@ -32,7 +32,7 @@
             <TextBlock Text="Built with Avalonia UI and .NET 9" 
                       FontSize="12" 
                       HorizontalAlignment="Center"
-                      Foreground="Gray"/>
+                      Foreground="{DynamicResource AppMutedForeground}"/>
             
             <Button Content="Close" 
                    HorizontalAlignment="Center"

@@ -1,7 +1,9 @@
 using System;
 using System.Globalization;
+using Avalonia;
 using Avalonia.Data.Converters;
 using Avalonia.Media;
+using Avalonia.Styling;
 
 namespace SupportAssistant.Converters;
 
@@ -71,7 +73,10 @@ public class StatusToColorConverter : IValueConverter
                 return Brushes.Green;
             }
         }
-        return Brushes.Black;
+        // Black is invisible on a dark background; fall back to the theme's foreground.
+        return Application.Current?.ActualThemeVariant == ThemeVariant.Dark
+            ? Brushes.White
+            : Brushes.Black;
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)

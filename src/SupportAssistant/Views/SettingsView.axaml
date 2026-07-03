@@ -29,14 +29,14 @@
                       SelectedItem="{Binding Theme}" 
                       Width="200" HorizontalAlignment="Left"/>
             <TextBlock Text="Choose the application theme (Light, Dark, or Auto)" 
-                       FontSize="12" Foreground="Gray"/>
+                       FontSize="12" Foreground="{DynamicResource AppMutedForeground}"/>
           </StackPanel>
 
           <StackPanel Spacing="5">
             <TextBlock Text="Language" FontWeight="SemiBold"/>
             <TextBox Text="{Binding Language}" Width="200" HorizontalAlignment="Left"/>
             <TextBlock Text="Application language/locale (e.g., en-US)" 
-                       FontSize="12" Foreground="Gray"/>
+                       FontSize="12" Foreground="{DynamicResource AppMutedForeground}"/>
           </StackPanel>
 
           <CheckBox IsChecked="{Binding StartWithSystem}" Content="Start with Windows"/>
@@ -57,7 +57,7 @@
               <Button Content="Browse..." Grid.Column="1" Command="{Binding BrowseModelPathCommand}"/>
             </Grid>
             <TextBlock Text="Path to the ONNX model file (phi-3-mini.onnx)" 
-                       FontSize="12" Foreground="Gray"/>
+                       FontSize="12" Foreground="{DynamicResource AppMutedForeground}"/>
           </StackPanel>
 
           <StackPanel Spacing="5">
@@ -66,7 +66,7 @@
                       SelectedItem="{Binding ExecutionProvider}" 
                       Width="200" HorizontalAlignment="Left"/>
             <TextBlock Text="Hardware acceleration method (DirectML recommended for Windows)" 
-                       FontSize="12" Foreground="Gray"/>
+                       FontSize="12" Foreground="{DynamicResource AppMutedForeground}"/>
           </StackPanel>
 
           <StackPanel Spacing="5">
@@ -75,7 +75,7 @@
                            Minimum="512" Maximum="8192" Increment="256"
                            Width="200" HorizontalAlignment="Left"/>
             <TextBlock Text="Maximum context length for prompts (512-8192)" 
-                       FontSize="12" Foreground="Gray"/>
+                       FontSize="12" Foreground="{DynamicResource AppMutedForeground}"/>
           </StackPanel>
 
           <StackPanel Spacing="5">
@@ -84,7 +84,7 @@
                            Minimum="0.0" Maximum="1.0" Increment="0.1" FormatString="F1"
                            Width="200" HorizontalAlignment="Left"/>
             <TextBlock Text="Controls randomness in generation (0.0 = deterministic, 1.0 = random)" 
-                       FontSize="12" Foreground="Gray"/>
+                       FontSize="12" Foreground="{DynamicResource AppMutedForeground}"/>
           </StackPanel>
 
           <StackPanel Spacing="5">
@@ -93,7 +93,7 @@
                            Minimum="0.0" Maximum="1.0" Increment="0.1" FormatString="F1"
                            Width="200" HorizontalAlignment="Left"/>
             <TextBlock Text="Nucleus sampling parameter (0.0-1.0)" 
-                       FontSize="12" Foreground="Gray"/>
+                       FontSize="12" Foreground="{DynamicResource AppMutedForeground}"/>
           </StackPanel>
 
           <StackPanel Spacing="5">
@@ -102,7 +102,7 @@
                            Minimum="1" Maximum="100" Increment="1"
                            Width="200" HorizontalAlignment="Left"/>
             <TextBlock Text="Top-K sampling parameter (1-100)" 
-                       FontSize="12" Foreground="Gray"/>
+                       FontSize="12" Foreground="{DynamicResource AppMutedForeground}"/>
           </StackPanel>
 
           <StackPanel Spacing="5">
@@ -111,7 +111,7 @@
                            Minimum="1" Maximum="4096" Increment="32"
                            Width="200" HorizontalAlignment="Left"/>
             <TextBlock Text="Maximum tokens to generate (1-4096)" 
-                       FontSize="12" Foreground="Gray"/>
+                       FontSize="12" Foreground="{DynamicResource AppMutedForeground}"/>
           </StackPanel>
 
           <StackPanel Spacing="5">
@@ -120,7 +120,7 @@
                            Minimum="5" Maximum="300" Increment="5"
                            Width="200" HorizontalAlignment="Left"/>
             <TextBlock Text="Timeout for AI inference (5-300 seconds)" 
-                       FontSize="12" Foreground="Gray"/>
+                       FontSize="12" Foreground="{DynamicResource AppMutedForeground}"/>
           </StackPanel>
 
           <CheckBox IsChecked="{Binding EnableStreaming}" Content="Enable response streaming"/>
@@ -139,7 +139,7 @@
               <Button Content="Browse..." Grid.Column="1" Command="{Binding BrowseKnowledgeBasePathCommand}"/>
             </Grid>
             <TextBlock Text="Directory containing knowledge base documents" 
-                       FontSize="12" Foreground="Gray"/>
+                       FontSize="12" Foreground="{DynamicResource AppMutedForeground}"/>
           </StackPanel>
 
           <CheckBox IsChecked="{Binding AutoUpdateKnowledgeBase}" Content="Auto-update knowledge base"/>
@@ -150,7 +150,7 @@
                            Minimum="1" Maximum="168" Increment="1"
                            Width="200" HorizontalAlignment="Left"/>
             <TextBlock Text="How often to check for knowledge base updates (1-168 hours)" 
-                       FontSize="12" Foreground="Gray"/>
+                       FontSize="12" Foreground="{DynamicResource AppMutedForeground}"/>
           </StackPanel>
 
           <StackPanel Spacing="5">
@@ -159,7 +159,7 @@
                            Minimum="100" Maximum="5000" Increment="100"
                            Width="200" HorizontalAlignment="Left"/>
             <TextBlock Text="Text chunk size for processing (100-5000 characters)" 
-                       FontSize="12" Foreground="Gray"/>
+                       FontSize="12" Foreground="{DynamicResource AppMutedForeground}"/>
           </StackPanel>
 
           <StackPanel Spacing="5">
@@ -168,7 +168,7 @@
                            Minimum="0" Maximum="1000" Increment="50"
                            Width="200" HorizontalAlignment="Left"/>
             <TextBlock Text="Overlap between chunks for better context (0-1000 characters)" 
-                       FontSize="12" Foreground="Gray"/>
+                       FontSize="12" Foreground="{DynamicResource AppMutedForeground}"/>
           </StackPanel>
 
           <StackPanel Spacing="5">
@@ -177,7 +177,7 @@
                            Minimum="1" Maximum="20" Increment="1"
                            Width="200" HorizontalAlignment="Left"/>
             <TextBlock Text="Number of top results to retrieve (1-20)" 
-                       FontSize="12" Foreground="Gray"/>
+                       FontSize="12" Foreground="{DynamicResource AppMutedForeground}"/>
           </StackPanel>
 
           <StackPanel Spacing="5">
@@ -186,7 +186,7 @@
                            Minimum="0.0" Maximum="1.0" Increment="0.1" FormatString="F1"
                            Width="200" HorizontalAlignment="Left"/>
             <TextBlock Text="Minimum similarity for relevant results (0.0-1.0)" 
-                       FontSize="12" Foreground="Gray"/>
+                       FontSize="12" Foreground="{DynamicResource AppMutedForeground}"/>
           </StackPanel>
           
         </StackPanel>
@@ -202,14 +202,14 @@
                            Minimum="8" Maximum="32" Increment="1"
                            Width="200" HorizontalAlignment="Left"/>
             <TextBlock Text="Chat message font size (8-32 pt)" 
-                       FontSize="12" Foreground="Gray"/>
+                       FontSize="12" Foreground="{DynamicResource AppMutedForeground}"/>
           </StackPanel>
 
           <StackPanel Spacing="5">
             <TextBlock Text="Font Family" FontWeight="SemiBold"/>
             <TextBox Text="{Binding FontFamily}" Width="200" HorizontalAlignment="Left"/>
             <TextBlock Text="Font family for chat messages" 
-                       FontSize="12" Foreground="Gray"/>
+                       FontSize="12" Foreground="{DynamicResource AppMutedForeground}"/>
           </StackPanel>
 
           <StackPanel Spacing="5">
@@ -218,7 +218,7 @@
                       SelectedItem="{Binding MessageDensity}" 
                       Width="200" HorizontalAlignment="Left"/>
             <TextBlock Text="Spacing between chat messages" 
-                       FontSize="12" Foreground="Gray"/>
+                       FontSize="12" Foreground="{DynamicResource AppMutedForeground}"/>
           </StackPanel>
 
           <CheckBox IsChecked="{Binding ShowTimestamps}" Content="Show message timestamps"/>
@@ -239,7 +239,7 @@
                            Minimum="0" Maximum="64" Increment="1"
                            Width="200" HorizontalAlignment="Left"/>
             <TextBlock Text="Number of CPU threads to use (0 = auto)" 
-                       FontSize="12" Foreground="Gray"/>
+                       FontSize="12" Foreground="{DynamicResource AppMutedForeground}"/>
           </StackPanel>
 
           <StackPanel Spacing="5">
@@ -248,7 +248,7 @@
                            Minimum="0" Maximum="32768" Increment="512"
                            Width="200" HorizontalAlignment="Left"/>
             <TextBlock Text="Maximum memory usage in MB (0 = unlimited)" 
-                       FontSize="12" Foreground="Gray"/>
+                       FontSize="12" Foreground="{DynamicResource AppMutedForeground}"/>
           </StackPanel>
 
           <StackPanel Spacing="5">
@@ -257,7 +257,7 @@
                            Minimum="10" Maximum="1024" Increment="10"
                            Width="200" HorizontalAlignment="Left"/>
             <TextBlock Text="Maximum cache size for embeddings (10-1024 MB)" 
-                       FontSize="12" Foreground="Gray"/>
+                       FontSize="12" Foreground="{DynamicResource AppMutedForeground}"/>
           </StackPanel>
 
           <StackPanel Spacing="5">
@@ -266,7 +266,7 @@
                       SelectedItem="{Binding LogLevel}" 
                       Width="200" HorizontalAlignment="Left"/>
             <TextBlock Text="Logging verbosity level" 
-                       FontSize="12" Foreground="Gray"/>
+                       FontSize="12" Foreground="{DynamicResource AppMutedForeground}"/>
           </StackPanel>
 
           <CheckBox IsChecked="{Binding EnableGpuAcceleration}" Content="Enable GPU acceleration"/>

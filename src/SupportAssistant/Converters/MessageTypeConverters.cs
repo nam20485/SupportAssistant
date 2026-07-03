@@ -4,6 +4,7 @@ using Avalonia;
 using Avalonia.Data.Converters;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Styling;
 using SupportAssistant.Models;
 
 namespace SupportAssistant.Converters;
@@ -17,6 +18,17 @@ public class MessageTypeToColorConverter : IValueConverter
     {
         if (value is ChatMessageType messageType)
         {
+            if (IsDarkTheme())
+            {
+                return messageType switch
+                {
+                    ChatMessageType.User => new SolidColorBrush(Color.FromRgb(27, 58, 92)),    // Dark blue
+                    ChatMessageType.Assistant => new SolidColorBrush(Color.FromRgb(45, 45, 45)),  // Dark gray
+                    ChatMessageType.System => new SolidColorBrush(Color.FromRgb(61, 46, 20)),  // Dark orange/brown
+                    _ => new SolidColorBrush(Color.FromRgb(45, 45, 45))
+                };
+            }
+
             return messageType switch
             {
                 ChatMessageType.User => new SolidColorBrush(Color.FromRgb(227, 242, 253)), // Light blue
@@ -26,6 +38,11 @@ public class MessageTypeToColorConverter : IValueConverter
             };
         }
         return new SolidColorBrush(Colors.White);
+    }
+
+    private static bool IsDarkTheme()
+    {
+        return Application.Current?.ActualThemeVariant == ThemeVariant.Dark;
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)

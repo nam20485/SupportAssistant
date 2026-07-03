@@ -5,7 +5,7 @@
              x:Class="SupportAssistant.Views.OnboardingWizardView"
              x:DataType="vm:OnboardingWizardViewModel">
 
-  <Grid RowDefinitions="Auto,*,Auto,Auto">
+  <Grid RowDefinitions="Auto,Auto,*,Auto">
     
     <!-- Header -->
     <Border Grid.Row="0" 
@@ -30,17 +30,17 @@
                 Background="{Binding CurrentStep, Converter={x:Static converters:StepToColorConverter.Instance}, ConverterParameter=0}">
           <TextBlock Text="1" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontWeight="Bold"/>
         </Border>
-        <Border Width="3" Height="3" CornerRadius="2" Background="Gray" VerticalAlignment="Center"/>
+        <Border Width="3" Height="3" CornerRadius="2" Background="{DynamicResource AppMutedForeground}" VerticalAlignment="Center"/>
         <Border Width="30" Height="30" CornerRadius="15" 
                 Background="{Binding CurrentStep, Converter={x:Static converters:StepToColorConverter.Instance}, ConverterParameter=1}">
           <TextBlock Text="2" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontWeight="Bold"/>
         </Border>
-        <Border Width="3" Height="3" CornerRadius="2" Background="Gray" VerticalAlignment="Center"/>
+        <Border Width="3" Height="3" CornerRadius="2" Background="{DynamicResource AppMutedForeground}" VerticalAlignment="Center"/>
         <Border Width="30" Height="30" CornerRadius="15" 
                 Background="{Binding CurrentStep, Converter={x:Static converters:StepToColorConverter.Instance}, ConverterParameter=2}">
           <TextBlock Text="3" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontWeight="Bold"/>
         </Border>
-        <Border Width="3" Height="3" CornerRadius="2" Background="Gray" VerticalAlignment="Center"/>
+        <Border Width="3" Height="3" CornerRadius="2" Background="{DynamicResource AppMutedForeground}" VerticalAlignment="Center"/>
         <Border Width="30" Height="30" CornerRadius="15" 
                 Background="{Binding CurrentStep, Converter={x:Static converters:StepToColorConverter.Instance}, ConverterParameter=3}">
           <TextBlock Text="✓" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontWeight="Bold"/>
@@ -70,7 +70,7 @@
                    FontSize="14" 
                    HorizontalAlignment="Center" 
                    MaxWidth="600" 
-                   Foreground="Gray">
+                   Foreground="{DynamicResource AppMutedForeground}">
           We'll guide you through configuring your AI model and knowledge base. The entire process should take just a few minutes.
         </TextBlock>
         <CheckBox Content="I understand and want to continue" 
@@ -87,7 +87,7 @@
                    FontWeight="Bold"/>
         <TextBlock TextWrapping="Wrap" 
                    FontSize="14" 
-                   Foreground="Gray">
+                   Foreground="{DynamicResource AppMutedForeground}">
           Configure where your AI models will be stored and which execution provider to use for optimal performance.
         </TextBlock>
 
@@ -104,7 +104,7 @@
           </Grid>
           <TextBlock Text="This directory will store AI model files. It will be created automatically if it doesn't exist." 
                      FontSize="12" 
-                     Foreground="Gray"/>
+                     Foreground="{DynamicResource AppMutedForeground}"/>
         </StackPanel>
 
         <StackPanel Spacing="10">
@@ -115,7 +115,7 @@
                     HorizontalAlignment="Left"/>
           <TextBlock Text="CPU: Works on all systems (slower), CUDA: NVIDIA GPUs (faster), DirectML: Windows GPUs" 
                      FontSize="12" 
-                     Foreground="Gray"/>
+                     Foreground="{DynamicResource AppMutedForeground}"/>
         </StackPanel>
 
         <Button Content="Validate Path" 
@@ -131,7 +131,7 @@
                    FontWeight="Bold"/>
         <TextBlock TextWrapping="Wrap" 
                    FontSize="14" 
-                   Foreground="Gray">
+                   Foreground="{DynamicResource AppMutedForeground}">
           Set up your knowledge base directory where your documentation and reference materials will be stored and indexed.
         </TextBlock>
 
@@ -148,14 +148,14 @@
           </Grid>
           <TextBlock Text="This directory will contain your documentation files (PDF, TXT, MD). It will be created automatically if it doesn't exist." 
                      FontSize="12" 
-                     Foreground="Gray"/>
+                     Foreground="{DynamicResource AppMutedForeground}"/>
         </StackPanel>
 
         <CheckBox Content="Create sample knowledge base file" 
                   IsChecked="{Binding CreateSampleKnowledgeBase}"/>
         <TextBlock Text="This will create a getting started guide in your knowledge base to help you understand how to use SupportAssistant." 
                    FontSize="12" 
-                   Foreground="Gray"
+                   Foreground="{DynamicResource AppMutedForeground}"
                    Margin="25,0,0,0"/>
 
         <Button Content="Validate Path" 
@@ -178,7 +178,7 @@
           Congratulations! SupportAssistant is now configured and ready to use.
         </TextBlock>
 
-        <Border Background="#E8F5E8" 
+        <Border Background="{DynamicResource AppSuccessBackground}" 
                 BorderBrush="#4CAF50" 
                 BorderThickness="1" 
                 CornerRadius="8" 
@@ -205,7 +205,7 @@
                    FontSize="14" 
                    HorizontalAlignment="Center" 
                    MaxWidth="600" 
-                   Foreground="Gray">
+                   Foreground="{DynamicResource AppMutedForeground}">
           You can change these settings later in File > Settings if needed.
         </TextBlock>
       </StackPanel>
@@ -215,7 +215,7 @@
 
     <!-- Status and Navigation -->
     <Border Grid.Row="3" 
-            BorderBrush="LightGray" 
+            BorderBrush="{DynamicResource AppBorderBrush}" 
             BorderThickness="0,1,0,0" 
             Padding="20">
       <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto">

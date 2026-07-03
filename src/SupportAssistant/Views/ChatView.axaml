@@ -44,7 +44,7 @@
                                Text="{Binding Type}" 
                                FontSize="11" 
                                FontWeight="SemiBold"
-                               Foreground="#666"/>
+                               Foreground="{DynamicResource AppSecondaryForeground}"/>
                     <Button Grid.Column="1" 
                             Content="📋" 
                             FontSize="12"
@@ -65,7 +65,7 @@
                   <!-- Message Footer -->
                   <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:MMM dd, HH:mm}'}" 
                              FontSize="10" 
-                             Foreground="Gray" 
+                             Foreground="{DynamicResource AppMutedForeground}" 
                              HorizontalAlignment="Right"
                              Margin="0,5,0,0"/>
                 </StackPanel>
@@ -77,14 +77,14 @@
         <!-- Typing Indicator -->
         <Border IsVisible="{Binding ShowTypingIndicator}"
                 Margin="5" Padding="10" CornerRadius="8"
-                Background="#F0F0F0" HorizontalAlignment="Left"
+                Background="{DynamicResource AppSubtleBackground}" HorizontalAlignment="Left"
                 MaxWidth="120">
           <StackPanel Orientation="Horizontal">
             <TextBlock Text="SupportAssistant is typing" 
                        FontSize="12" FontStyle="Italic" 
-                       Foreground="Gray" VerticalAlignment="Center"/>
+                       Foreground="{DynamicResource AppMutedForeground}" VerticalAlignment="Center"/>
             <StackPanel Orientation="Horizontal" Margin="8,0,0,0">
-              <Ellipse Width="4" Height="4" Fill="Gray" Margin="1">
+              <Ellipse Width="4" Height="4" Fill="{DynamicResource AppMutedForeground}" Margin="1">
                 <Ellipse.Styles>
                   <Style Selector="Ellipse">
                     <Style.Animations>
@@ -103,7 +103,7 @@
                   </Style>
                 </Ellipse.Styles>
               </Ellipse>
-              <Ellipse Width="4" Height="4" Fill="Gray" Margin="1">
+              <Ellipse Width="4" Height="4" Fill="{DynamicResource AppMutedForeground}" Margin="1">
                 <Ellipse.Styles>
                   <Style Selector="Ellipse">
                     <Style.Animations>
@@ -122,7 +122,7 @@
                   </Style>
                 </Ellipse.Styles>
               </Ellipse>
-              <Ellipse Width="4" Height="4" Fill="Gray" Margin="1">
+              <Ellipse Width="4" Height="4" Fill="{DynamicResource AppMutedForeground}" Margin="1">
                 <Ellipse.Styles>
                   <Style Selector="Ellipse">
                     <Style.Animations>
@@ -183,9 +183,9 @@
 
     <!-- Enhanced Progress Area -->
     <Border Grid.Row="2" 
-            Background="#F8F8F8" 
+            Background="{DynamicResource AppPanelBackground}" 
             Padding="10,8"
-            BorderBrush="#E0E0E0" 
+            BorderBrush="{DynamicResource AppBorderBrush}" 
             BorderThickness="0,1,0,0"
             IsVisible="{Binding IsProcessing}">
       <Grid RowDefinitions="Auto,Auto">
@@ -194,14 +194,14 @@
             <TextBlock Text="{Binding ProcessingStage}" 
                        FontSize="12" 
                        FontWeight="Medium"
-                       Foreground="#333"/>
+                       Foreground="{DynamicResource AppStrongForeground}"/>
             <TextBlock Text=" • " 
                        FontSize="12" 
-                       Foreground="Gray"
+                       Foreground="{DynamicResource AppMutedForeground}"
                        IsVisible="{Binding ProcessingStage, Converter={StaticResource StringNotEmptyConverter}}"/>
             <TextBlock Text="{Binding ProcessingProgress, StringFormat='{}{0}%'}" 
                        FontSize="12" 
-                       Foreground="Gray"/>
+                       Foreground="{DynamicResource AppMutedForeground}"/>
           </StackPanel>
           
           <Button Grid.Column="1" 
@@ -222,21 +222,21 @@
 
     <!-- Status Bar -->
     <Border Grid.Row="3" 
-            Background="#FAFAFA" 
+            Background="{DynamicResource AppStatusBarBackground}" 
             Padding="10,5"
-            BorderBrush="#E0E0E0" 
+            BorderBrush="{DynamicResource AppBorderBrush}" 
             BorderThickness="0,1,0,0">
       <Grid ColumnDefinitions="*,Auto">
         <TextBlock Grid.Column="0" 
                    Text="{Binding StatusMessage}" 
                    FontSize="12" 
-                   Foreground="Gray"/>
+                   Foreground="{DynamicResource AppMutedForeground}"/>
         
         <StackPanel Grid.Column="1" Orientation="Horizontal">
-          <TextBlock Text="💡 " FontSize="12" Foreground="Gray"/>
+          <TextBlock Text="💡 " FontSize="12" Foreground="{DynamicResource AppMutedForeground}"/>
           <TextBlock Text="Ctrl+L: Clear • Esc: Cancel • Enter: Send" 
                      FontSize="11" 
-                     Foreground="Gray"/>
+                     Foreground="{DynamicResource AppMutedForeground}"/>
         </StackPanel>
       </Grid>
     </Border>
