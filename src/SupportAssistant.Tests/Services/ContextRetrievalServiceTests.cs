@@ -60,7 +60,7 @@ public class ContextRetrievalServiceTests
         result.IsSuccessful.Should().BeTrue();
         result.ErrorMessage.Should().BeNull();
         result.Query.Should().Be(processedQuery);
-        result.Documents.Should().HaveCountLessOrEqualTo(10); // Default max results
+        result.Documents.Should().HaveCountLessThanOrEqualTo(10); // Default max results
         result.Metadata.Should().NotBeNull();
     }
 
@@ -125,7 +125,7 @@ public class ContextRetrievalServiceTests
         var result = await _contextRetrievalService.RetrieveContextAsync(processedQuery, parameters);
 
         // Assert
-        result.Documents.Should().HaveCountLessOrEqualTo(5);
+        result.Documents.Should().HaveCountLessThanOrEqualTo(5);
         result.Metadata.Parameters.Should().Be(parameters);
         
         // Verify knowledge base was called with correct parameters
@@ -297,8 +297,8 @@ public class ContextRetrievalServiceTests
         // Assert
         result.Metadata.Should().NotBeNull();
         result.Metadata.TotalDocumentsFound.Should().BeGreaterThan(0);
-        result.Metadata.DocumentsReturned.Should().BeGreaterOrEqualTo(0);
-        result.Metadata.RetrievalTimeMs.Should().BeGreaterOrEqualTo(0);
+        result.Metadata.DocumentsReturned.Should().BeGreaterThanOrEqualTo(0);
+        result.Metadata.RetrievalTimeMs.Should().BeGreaterThanOrEqualTo(0);
         result.Metadata.Parameters.Should().NotBeNull();
         
         if (result.Documents.Length > 0)

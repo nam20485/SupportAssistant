@@ -177,6 +177,6 @@ public class QueryProcessingServiceTests
         result.Metadata.WordCount.Should().BeGreaterThan(0);
         result.Metadata.ProcessedWordCount.Should().BeGreaterThan(0);
         result.Metadata.EmbeddingDimension.Should().Be(expectedEmbedding.Length);
-        result.Metadata.ProcessingTimeMs.Should().BeGreaterOrEqualTo(0);
+        result.Metadata.ProcessingTimeMs.Should().BeGreaterThanOrEqualTo(0);
     }
 }

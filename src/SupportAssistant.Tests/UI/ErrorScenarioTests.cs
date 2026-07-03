@@ -318,7 +318,7 @@ public class ErrorScenarioTests
         
         // Should not duplicate messages excessively
         var userMessages = _viewModel.Messages.Count(m => m.Type == ChatMessageType.User);
-        userMessages.Should().BeLessOrEqualTo(10, "Should not create excessive duplicate messages");
+        userMessages.Should().BeLessThanOrEqualTo(10, "Should not create excessive duplicate messages");
     }
 
     [Fact]
@@ -370,7 +370,7 @@ public class ErrorScenarioTests
         parallelAction.Should().NotThrow("Message collection modification should be thread-safe");
         
         // All messages should be added
-        _viewModel.Messages.Count.Should().BeGreaterOrEqualTo(50, "All concurrent messages should be added");
+        _viewModel.Messages.Count.Should().BeGreaterThanOrEqualTo(50, "All concurrent messages should be added");
     }
 
     #endregion
