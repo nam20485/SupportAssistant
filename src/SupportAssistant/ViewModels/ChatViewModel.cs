@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Linq;
@@ -37,8 +38,11 @@ public partial class ChatViewModel : ViewModelBase
         _contextRetrieval = contextRetrieval ?? throw new ArgumentNullException(nameof(contextRetrieval));
         _responseGenerationService = responseGenerationService ?? throw new ArgumentNullException(nameof(responseGenerationService));
 
-        Messages = new ObservableCollection<ChatMessage>();
-        
+        Messages = new ThreadSafeObservableCollection<ChatMessage>();
+
+        // Trigger auto-scroll whenever messages are added
+        Messages.CollectionChanged += OnMessagesCollectionChanged;
+
         // Initialize with welcome message
         Messages.Add(new ChatMessage
         {
@@ -164,6 +168,12 @@ public partial class ChatViewModel : ViewModelBase
             ProcessingProgress = 100;
             IsTyping = false;
 
+            if (response == null)
+            {
+                StatusMessage = "Unable to generate a response. Please try again.";
+                return;
+            }
+
             // Format response with metadata
             var responseContent = FormatResponseWithMetadata(response);
 
@@ -253,6 +263,8 @@ public partial class ChatViewModel : ViewModelBase
 
     private void ClearChat()
     {
+        IsProcessing = false;
+        IsTyping = false;
         Messages.Clear();
         Messages.Add(new ChatMessage
         {
@@ -262,7 +274,7 @@ public partial class ChatViewModel : ViewModelBase
         StatusMessage = "Ready";
         ProcessingStage = string.Empty;
         ProcessingProgress = 0;
-        
+
         // Trigger auto-scroll to show welcome message
         ScrollToBottom?.Invoke();
     }
@@ -302,11 +314,31 @@ public partial class ChatViewModel : ViewModelBase
         }
     }
 
+    /// <summary>
+    /// Raised when a message is added so the UI can auto-scroll to the bottom.
+    /// </summary>
+    private void OnMessagesCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.Action == NotifyCollectionChangedAction.Add)
+        {
+            ScrollToBottom?.Invoke();
+        }
+    }
+
     // Keyboard shortcut handlers
     public void HandleKeyboardShortcut(string shortcut)
     {
         switch (shortcut.ToLower())
         {
+            case "enter":
+            case "ctrl+enter":
+                if (SendMessageCommand.CanExecute(null))
+                    SendMessageCommand.Execute(null);
+                break;
+            case "shift+enter":
+                // Insert a newline without sending
+                UserInput += "\n";
+                break;
             case "ctrl+l":
                 if (ClearChatCommand.CanExecute(null))
                     ClearChatCommand.Execute(null);
@@ -315,9 +347,18 @@ public partial class ChatViewModel : ViewModelBase
                 if (CancelProcessingCommand.CanExecute(null))
                     CancelProcessingCommand.Execute(null);
                 break;
-            case "ctrl+enter":
-                if (SendMessageCommand.CanExecute(null))
-                    SendMessageCommand.Execute(null);
+            case "ctrl+c":
+                var lastAssistantMessage = Messages.LastOrDefault(m => m.Type == ChatMessageType.Assistant);
+                if (lastAssistantMessage != null)
+                    CopyMessage(lastAssistantMessage.Content);
+                break;
+            case "ctrl+r":
+                var lastUserMessage = Messages.LastOrDefault(m => m.Type == ChatMessageType.User);
+                if (lastUserMessage != null)
+                {
+                    UserInput = lastUserMessage.Content;
+                    StatusMessage = "Ready to retry message";
+                }
                 break;
         }
     }
