@@ -158,8 +158,8 @@
                    Foreground="{DynamicResource AppMutedForeground}"
                    Margin="25,0,0,0"/>
 
-        <Button Content="Validate Path" 
-                Command="{Binding ValidateModelPathCommand}"
+        <Button Content="Validate Path"
+                Command="{Binding ValidateKnowledgeBasePathCommand}"
                 HorizontalAlignment="Left"/>
       </StackPanel>
 

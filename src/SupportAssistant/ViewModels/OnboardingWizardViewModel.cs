@@ -50,6 +50,7 @@ public class OnboardingWizardViewModel : ViewModelBase
         BrowseModelPathCommand = ReactiveCommand.Create(BrowseModelPath);
         BrowseKnowledgeBasePathCommand = ReactiveCommand.Create(BrowseKnowledgeBasePath);
         ValidateModelPathCommand = ReactiveCommand.CreateFromTask(ValidateModelPathAsync);
+        ValidateKnowledgeBasePathCommand = ReactiveCommand.CreateFromTask(ValidateKnowledgeBasePathAsync);
         CreateDirectoriesCommand = ReactiveCommand.CreateFromTask(CreateDirectoriesAsync);
     }
 
@@ -165,6 +166,7 @@ public class OnboardingWizardViewModel : ViewModelBase
     public ReactiveCommand<Unit, Unit> BrowseModelPathCommand { get; }
     public ReactiveCommand<Unit, Unit> BrowseKnowledgeBasePathCommand { get; }
     public ReactiveCommand<Unit, Unit> ValidateModelPathCommand { get; }
+    public ReactiveCommand<Unit, Unit> ValidateKnowledgeBasePathCommand { get; }
     public ReactiveCommand<Unit, Unit> CreateDirectoriesCommand { get; }
 
     #endregion
