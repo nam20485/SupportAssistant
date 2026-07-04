@@ -62,9 +62,12 @@ public partial class App : Application
                         desktop.MainWindow = mainWindow;
                         mainWindow.Show();
                         
-                        // Start background initialization
+                        // Start background initialization.
+                        // ReactiveCommand.Execute() returns a cold IObservable<Unit> that must be
+                        // subscribed to actually run the command; simply discarding it (fire-and-forget
+                        // assignment) would never start initialization.
                         var backgroundTaskVm = ((MainWindowViewModel)mainWindow.DataContext).BackgroundTask;
-                        _ = backgroundTaskVm.StartInitializationCommand.Execute();
+                        backgroundTaskVm.StartInitializationCommand.Execute().Subscribe();
                     }
                 };
             }
@@ -102,7 +105,15 @@ public partial class App : Application
         // Core services
         services.AddSingleton<IOnnxRuntimeService, OnnxRuntimeService>();
         services.AddSingleton<IConfigurationService, DefaultConfigurationService>();
-        services.AddSingleton<IEmbeddingService, OnnxEmbeddingService>();
+        // Create the embedding service through the factory so the application falls back to
+        // SimpleEmbeddingService when the ONNX embedding model is missing or fails to initialize.
+        services.AddSingleton<IEmbeddingServiceFactory, EmbeddingServiceFactory>();
+        services.AddSingleton<IEmbeddingService>(sp =>
+        {
+            var factory = sp.GetRequiredService<IEmbeddingServiceFactory>();
+            // Resolve off the current (potentially UI) thread to avoid a sync-over-async deadlock.
+            return Task.Run(() => factory.CreateEmbeddingServiceAsync()).GetAwaiter().GetResult();
+        });
         services.AddSingleton<IVectorStorageService, FileVectorStorageService>();
         services.AddSingleton<ITextChunkingService, TextChunkingService>();
         services.AddSingleton<IKnowledgeBaseService, KnowledgeBaseService>();
