@@ -238,29 +238,6 @@ public partial class ChatViewModel : ViewModelBase
         return content;
     }
 
-    private async Task<string> GenerateSimpleResponse(string userQuery, ContextRetrievalResult contextResult)
-    {
-        await Task.Delay(500); // Simulate some processing time
-        
-        if (contextResult.Documents.Length == 0)
-        {
-            return "I couldn't find any relevant information in my knowledge base to answer your question. Please try rephrasing your question or asking about a different topic.";
-        }
-
-        var response = $"Based on the information in my knowledge base, here's what I found regarding your question about \"{userQuery}\":\n\n";
-        
-        foreach (var doc in contextResult.Documents.Take(3)) // Show top 3 results
-        {
-            response += $"📄 **{doc.Document.Source}**\n";
-            response += $"{doc.Document.Content.Substring(0, Math.Min(doc.Document.Content.Length, 200))}...\n";
-            response += $"(Relevance: {doc.SimilarityScore:P1})\n\n";
-        }
-
-        response += $"Retrieved from {contextResult.Documents.Length} knowledge base sources.";
-        
-        return response;
-    }
-
     private void ClearChat()
     {
         IsProcessing = false;
