@@ -18,6 +18,10 @@ public class FileVectorStorageService : IVectorStorageService
     private int _embeddingDimension;
     private bool _isInitialized;
 
+    // Incrementally maintained statistics so GetStatisticsAsync is O(1).
+    private readonly HashSet<string> _documentSources = new();
+    private long _totalCharacters;
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         WriteIndented = true,
@@ -79,11 +83,18 @@ public class FileVectorStorageService : IVectorStorageService
                 Timestamp = DateTime.UtcNow
             };
 
-            // Remove existing vector with same ID if it exists
+            // Remove existing vector with same ID if it exists (re-ingestion), adjusting stats.
+            var existing = _vectors.FirstOrDefault(v => v.Id == id);
+            if (existing != null)
+            {
+                _totalCharacters -= existing.Content.Length;
+            }
             _vectors.RemoveAll(v => v.Id == id);
-            
+
             // Add new vector
             _vectors.Add(storedVector);
+            _documentSources.Add(storedVector.Source);
+            _totalCharacters += storedVector.Content.Length;
 
             // Save to file
             await SaveVectorsToFileAsync();
@@ -134,12 +145,24 @@ public class FileVectorStorageService : IVectorStorageService
         return await Task.FromResult(_vectors.Count);
     }
 
+    public Task<VectorStorageStatistics> GetStatisticsAsync()
+    {
+        return Task.FromResult(new VectorStorageStatistics
+        {
+            ChunkCount = _vectors.Count,
+            DocumentCount = _documentSources.Count,
+            TotalCharacters = _totalCharacters
+        });
+    }
+
     public async Task<bool> ClearAsync()
     {
         try
         {
             _vectors.Clear();
-            
+            _documentSources.Clear();
+            _totalCharacters = 0;
+
             if (File.Exists(_storagePath))
             {
                 File.Delete(_storagePath);
@@ -180,6 +203,21 @@ public class FileVectorStorageService : IVectorStorageService
             _vectors.Clear();
             _vectors.AddRange(vectorData.Vectors);
             _embeddingDimension = vectorData.EmbeddingDimension;
+            RecomputeStatistics();
+        }
+    }
+
+    /// <summary>
+    /// Rebuilds the incrementally-maintained statistics from the loaded vectors (one-time, on load).
+    /// </summary>
+    private void RecomputeStatistics()
+    {
+        _documentSources.Clear();
+        _totalCharacters = 0;
+        foreach (var vector in _vectors)
+        {
+            _documentSources.Add(vector.Source);
+            _totalCharacters += vector.Content.Length;
         }
     }
 

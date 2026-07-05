@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using SupportAssistant.Core.Models;
 
@@ -6,7 +7,7 @@ namespace SupportAssistant.Core.Services;
 /// <summary>
 /// Service for generating AI-powered responses to user queries using context from the knowledge base
 /// </summary>
-public interface IResponseGenerationService
+public interface IResponseGenerationService : IDisposable
 {
     /// <summary>
     /// Generates a response using the provided request containing query and context

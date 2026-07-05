@@ -128,14 +128,14 @@ public class KnowledgeBaseService : IKnowledgeBaseService
     {
         try
         {
-            var chunkCount = await _vectorStorageService.GetChunkCountAsync();
+            var stats = await _vectorStorageService.GetStatisticsAsync();
             var storageInfo = new FileInfo(_storagePath);
-            
+
             return new KnowledgeBaseStatistics
             {
-                DocumentCount = await EstimateDocumentCountAsync(),
-                ChunkCount = chunkCount,
-                TotalCharacters = await EstimateTotalCharactersAsync(),
+                DocumentCount = stats.DocumentCount,
+                ChunkCount = stats.ChunkCount,
+                TotalCharacters = stats.TotalCharacters,
                 LastUpdated = storageInfo.Exists ? storageInfo.LastWriteTime : DateTime.MinValue,
                 StorageLocation = _storagePath
             };
@@ -178,44 +178,6 @@ public class KnowledgeBaseService : IKnowledgeBaseService
         catch
         {
             return false;
-        }
-    }
-
-    private async Task<int> EstimateDocumentCountAsync()
-    {
-        // This is a simple estimation based on unique sources
-        // In a real implementation, we'd track this more precisely
-        try
-        {
-            var searchResults = await _vectorStorageService.SearchAsync(
-                new float[_embeddingService.GetEmbeddingDimension()], 
-                maxResults: 1000, 
-                similarityThreshold: 0.0f);
-            
-            var uniqueSources = searchResults.Select(r => r.Source).Distinct().Count();
-            return uniqueSources;
-        }
-        catch
-        {
-            return 0;
-        }
-    }
-
-    private async Task<long> EstimateTotalCharactersAsync()
-    {
-        // Estimate total characters from stored chunks
-        try
-        {
-            var searchResults = await _vectorStorageService.SearchAsync(
-                new float[_embeddingService.GetEmbeddingDimension()], 
-                maxResults: 1000, 
-                similarityThreshold: 0.0f);
-            
-            return searchResults.Sum(r => r.Content.Length);
-        }
-        catch
-        {
-            return 0;
         }
     }
 }

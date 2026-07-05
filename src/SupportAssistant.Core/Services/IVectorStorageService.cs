@@ -44,6 +44,13 @@ public interface IVectorStorageService
     Task<int> GetChunkCountAsync();
 
     /// <summary>
+    /// Gets aggregate statistics (chunk count, unique document count, and total characters)
+    /// maintained incrementally during ingestion. This is an O(1) operation.
+    /// </summary>
+    /// <returns>A snapshot of the current storage statistics.</returns>
+    Task<VectorStorageStatistics> GetStatisticsAsync();
+
+    /// <summary>
     /// Deletes all stored vectors and metadata.
     /// </summary>
     /// <returns>True if clearing was successful, false otherwise.</returns>
@@ -66,4 +73,19 @@ public class VectorSearchResult
     public required string Source { get; init; }
     public required float SimilarityScore { get; init; }
     public Dictionary<string, object>? Metadata { get; init; }
+}
+
+/// <summary>
+/// Aggregate statistics for the vector storage, maintained incrementally so reads are O(1).
+/// </summary>
+public class VectorStorageStatistics
+{
+    /// <summary>Total number of stored document chunks.</summary>
+    public int ChunkCount { get; init; }
+
+    /// <summary>Number of distinct document sources.</summary>
+    public int DocumentCount { get; init; }
+
+    /// <summary>Total character count across all stored chunks.</summary>
+    public long TotalCharacters { get; init; }
 }
