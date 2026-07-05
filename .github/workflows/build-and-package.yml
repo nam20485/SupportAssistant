@@ -13,6 +13,11 @@ env:
   SOLUTION: SupportAssistant.sln
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
   DOTNET_CLI_TELEMETRY_OPTOUT: true
+  # GitHub Packages auth for the private `intel-agency` feed hosting InferenceEngine.Core.
+  # The default GITHUB_TOKEN is scoped to THIS repo (nam20485/SupportAssistant) and cannot read
+  # intel-agency packages (different owner) — hence this must be a PAT (classic) with `read:packages`
+  # belonging to a member of intel-agency, stored as the GH_PACKAGES_TOKEN repo secret.
+  NUGET_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
 
 jobs:
   build-and-test:
