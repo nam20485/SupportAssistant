@@ -76,14 +76,8 @@ jobs:
         dotnet publish src/SupportAssistant/SupportAssistant.csproj `
           --configuration Release `
           --runtime ${{ matrix.runtime }} `
-          --self-contained true `
-          --output dist/${{ matrix.runtime }} `
           --no-restore `
-          /p:PublishSingleFile=true `
-          /p:PublishTrimmed=true `
-          /p:TrimMode=partial `
-          /p:IncludeNativeLibrariesForSelfExtract=true `
-          /p:PublishReadyToRun=true
+          --output dist/${{ matrix.runtime }}
     
     - name: Create portable package
       run: |
