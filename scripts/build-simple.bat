@@ -51,8 +51,8 @@ dotnet publish "%PROJECT_PATH%" ^
     --output "%DIST_PATH%\win-x64" ^
     --no-restore ^
     /p:PublishSingleFile=true ^
-    /p:PublishTrimmed=true ^
-    /p:TrimMode=partial ^
+    /p:PublishTrimmed=false ^
+    /p:IsTrimmable=false ^
     /p:IncludeNativeLibrariesForSelfExtract=true ^
     /p:PublishReadyToRun=true
 

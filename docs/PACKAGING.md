@@ -73,8 +73,7 @@ dotnet publish src/SupportAssistant/SupportAssistant.csproj \
   --self-contained true \
   --output dist/win-x64 \
   /p:PublishSingleFile=true \
-  /p:PublishTrimmed=true \
-  /p:TrimMode=partial \
+  /p:PublishTrimmed=false \
   /p:IncludeNativeLibrariesForSelfExtract=true \
   /p:PublishReadyToRun=true
 
@@ -85,8 +84,7 @@ dotnet publish src/SupportAssistant/SupportAssistant.csproj \
   --self-contained true \
   --output dist/win-arm64 \
   /p:PublishSingleFile=true \
-  /p:PublishTrimmed=true \
-  /p:TrimMode=partial \
+  /p:PublishTrimmed=false \
   /p:IncludeNativeLibrariesForSelfExtract=true \
   /p:PublishReadyToRun=true
 ```

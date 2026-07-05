@@ -189,7 +189,7 @@ SupportAssistant is open source and welcomes contributions!
 - **Discussions**: Community Q&A and general discussion
 
 ### Resources
-- **Project Repository**: [GitHub Repository URL]
+- **Project Repository**: https://github.com/nam20485/SupportAssistant
 - **Documentation**: Available in `/docs` folder
 - **Examples**: Sample configurations and use cases provided
 - **Build Instructions**: Complete setup and compilation guides

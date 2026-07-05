@@ -7,8 +7,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <WarningsAsErrors />
-    
+
     <!-- Application Metadata -->
     <AssemblyTitle>SupportAssistant</AssemblyTitle>
     <AssemblyDescription>Intelligent technical assistance desktop application with local AI</AssemblyDescription>
