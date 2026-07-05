@@ -375,8 +375,11 @@ public class PerformanceTests
         await Task.WhenAll(tasks);
         stopwatch.Stop();
         
-        // Assert - All operations should complete without deadlocks
-        stopwatch.ElapsedMilliseconds.Should().BeLessThan(1000, 
+        // Assert - All operations should complete without deadlocks.
+        // Threshold is generous because Thread.Sleep(1) maps to the OS timer
+        // granularity (~15ms on Windows) and CI runners are virtualized, so
+        // 300 iterations can legitimately take well over 1s without a deadlock.
+        stopwatch.ElapsedMilliseconds.Should().BeLessThan(5000, 
             "Concurrent operations should complete efficiently");
     }
 
