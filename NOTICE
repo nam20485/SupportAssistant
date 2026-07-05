@@ -1,0 +1,51 @@
+SupportAssistant
+Copyright (C) 2026 SupportAssistant Contributors
+
+This program is free software: you can redistribute it and/or modify it
+under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or (at your
+option) any later version. See [LICENSE](./LICENSE) for the full text.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License
+for more details.
+
+================================================================================
+
+Third-Party Notices
+================================================================================
+
+This product distributes and/or links to the following third-party software:
+
+--------------------------------------------------------------------------------
+InferenceEngine.Core
+--------------------------------------------------------------------------------
+  License:    GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later)
+  Copyright:  (C) 2026 Artificial Intelligence Agency. All rights reserved.
+  Source:     https://github.com/intel-agency/inference-engine-lib
+  Package:    InferenceEngine.Core (https://github.com/orgs/intel-agency/packages?repo_name=inference-engine-lib)
+  Purpose:    ONNX inference engine lifecycle, cross-platform hardware acceleration
+              (DirectML/ROCm/CoreML with CPU fallback), and model download providers.
+
+  InferenceEngine.Core in turn depends on:
+    - Microsoft.ML.OnnxRuntime (MIT License) — https://github.com/microsoft/onnxruntime
+    - Microsoft.ML.OnnxRuntime.DirectML (MIT License) — Windows GPU acceleration
+    - InferenceEngine.ROCm.Runtime.linux-x64 (AGPL-3.0-or-later) — AMD ROCm GPU acceleration (linux-x64)
+    - Microsoft.ML.OnnxRuntime.Extensions (MIT License)
+
+--------------------------------------------------------------------------------
+Microsoft.ML.Tokenizers
+--------------------------------------------------------------------------------
+  License:    MIT License
+  Source:     https://github.com/dotnet/machinelearning
+  Purpose:    Text tokenization for the embedding and generation models.
+
+--------------------------------------------------------------------------------
+Avalonia UI, ReactiveUI, CommunityToolkit.Mvvm, Microsoft.Extensions.*
+--------------------------------------------------------------------------------
+  License:    MIT License (each)
+  Purpose:    UI framework, MVVM, dependency injection, and supporting libraries.
+
+The full license texts for MIT-licensed dependencies are available in their
+respective NuGet packages / source repositories.

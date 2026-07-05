@@ -6,14 +6,24 @@
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsAsErrors />
-    
+
     <!-- Disable trimming warnings for now - will be fixed with JsonSourceGenerator -->
     <WarningsNotAsErrors>IL2026;IL2070;IL2075</WarningsNotAsErrors>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.19.2" />
-    <PackageReference Include="Microsoft.ML.OnnxRuntime.DirectML" Version="1.19.2" />
+    <!--
+      InferenceEngine.Core (AGPL-3.0-or-later) provides the ONNX session lifecycle,
+      cross-platform HW acceleration (DirectML/ROCm/CoreML + CPU fallback) and model
+      download providers. It brings Microsoft.ML.OnnxRuntime 1.24.1 transitively on all
+      platforms, Microsoft.ML.OnnxRuntime.DirectML on Windows, and
+      InferenceEngine.ROCm.Runtime.linux-x64 on linux-x64.
+    -->
+    <PackageReference Include="InferenceEngine.Core" Version="1.1.0-dev.18" />
+    <!-- Pinned to match InferenceEngine.Core's transitive OnnxRuntime version (1.24.1). -->
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="$(OnnxRuntimeVersion)" />
+    <!-- Tokenization (Phi-3 + MiniLM tokenizer.json) — stays in our code, the lib is tensor-in/out. -->
+    <PackageReference Include="Microsoft.ML.Tokenizers" Version="1.0.3" />
   </ItemGroup>
 
 </Project>
