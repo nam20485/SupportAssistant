@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using SupportAssistant.Core.Tools;
 
@@ -13,8 +16,24 @@ namespace SupportAssistant.Core.Security
         private readonly Dictionary<string, UserPermissionSettings> _userSettings = new();
         private readonly Dictionary<string, ToolApprovalResult> _rememberedApprovals = new();
         private readonly Dictionary<string, ToolBackupInfo> _backups = new();
+        private readonly Dictionary<string, List<BackupTarget>> _backupTargets = new();
         private readonly List<ToolExecutionAuditEntry> _auditTrail = new();
+        private readonly IUserInteraction? _userInteraction;
+        private readonly string _backupRoot;
         private readonly object _lock = new object();
+
+        /// <summary>
+        /// Creates the security manager. <paramref name="userInteraction"/> wires a real human-in-the-loop
+        /// approval surface (Avalonia modal dialog); when null, approval falls back to a deterministic
+        /// simulation so headless/test environments still function.
+        /// </summary>
+        public SecurityManager(IUserInteraction? userInteraction = null)
+        {
+            _userInteraction = userInteraction;
+            _backupRoot = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "SupportAssistant", "Backups");
+        }
 
         public Task<bool> HasPermissionAsync(string userId, ITool tool)
         {
@@ -54,24 +73,77 @@ namespace SupportAssistant.Core.Security
                 }
             }
 
-            // For now, simulate user approval (in real implementation, this would show UI)
-            // This is a placeholder that will be replaced with actual UI interaction
-            return await SimulateUserApprovalAsync(userId, tool, parameters);
+            ToolApprovalResult result;
+            if (_userInteraction is not null)
+            {
+                // Real human-in-the-loop approval (Phase 4 T3.2).
+                result = await _userInteraction.RequestApprovalAsync(tool, parameters, BuildApprovalPreview(tool, parameters))
+                    .ConfigureAwait(false);
+            }
+            else
+            {
+                // Headless/test fallback.
+                result = await SimulateUserApprovalAsync(userId, tool, parameters).ConfigureAwait(false);
+            }
+
+            // Remember the decision if the user opted in (and the approval is bounded in time).
+            if (result.RememberDecision && result.IsApproved && result.ValidityDuration.HasValue)
+            {
+                lock (_lock)
+                {
+                    _rememberedApprovals[rememberedKey] = result;
+                }
+            }
+
+            return result;
         }
 
         public Task<ToolBackupInfo> CreateBackupAsync(ITool tool, Dictionary<string, object> parameters)
         {
             var backupId = Guid.NewGuid().ToString();
+            var backedUpFiles = new List<string>();
+            var targets = new List<BackupTarget>();
+
+            try
+            {
+                var backupDir = Path.Combine(_backupRoot, backupId);
+                Directory.CreateDirectory(backupDir);
+
+                // Back up each existing target file referenced by the tool's parameters (Phase 4 T3.3).
+                // Non-existent targets are recorded as "new files" so restore can delete them.
+                foreach (var path in ExtractTargetFilePaths(parameters))
+                {
+                    var existed = File.Exists(path);
+                    if (existed)
+                    {
+                        var dest = Path.Combine(backupDir, $"{Guid.NewGuid():N}_{Path.GetFileName(path)}");
+                        File.Copy(path, dest, overwrite: true);
+                        targets.Add(new BackupTarget(path, dest, ExistedBefore: true));
+                        backedUpFiles.Add(path);
+                    }
+                    else
+                    {
+                        targets.Add(new BackupTarget(path, BackupPath: null, ExistedBefore: false));
+                    }
+                }
+            }
+            catch
+            {
+                // A failed backup is non-fatal to recording the backup record; restore simply will not
+                // have the file to copy back, which the caller logs.
+            }
+
             var backupInfo = new ToolBackupInfo(
                 backupId,
                 DateTime.UtcNow,
+                backedUpFiles: backedUpFiles,
                 description: $"Backup before {tool.Name} execution",
-                canRestore: true
-            );
+                canRestore: true);
 
             lock (_lock)
             {
                 _backups[backupId] = backupInfo;
+                _backupTargets[backupId] = targets;
             }
 
             return Task.FromResult(backupInfo);
@@ -79,16 +151,44 @@ namespace SupportAssistant.Core.Security
 
         public Task<bool> RestoreBackupAsync(string backupId)
         {
+            List<BackupTarget>? targets;
             lock (_lock)
             {
-                if (_backups.TryGetValue(backupId, out var backup) && backup.CanRestore)
+                if (!_backups.TryGetValue(backupId, out var backup) || !backup.CanRestore)
                 {
-                    // Implementation would restore files/registry from backup
-                    return Task.FromResult(true);
+                    return Task.FromResult(false);
                 }
+
+                _backupTargets.TryGetValue(backupId, out targets);
             }
 
-            return Task.FromResult(false);
+            if (targets is null)
+            {
+                return Task.FromResult(false);
+            }
+
+            try
+            {
+                foreach (var target in targets)
+                {
+                    if (target.ExistedBefore && target.BackupPath is not null)
+                    {
+                        // Restore the original contents from the backup copy.
+                        File.Copy(target.BackupPath, target.OriginalPath, overwrite: true);
+                    }
+                    else if (File.Exists(target.OriginalPath))
+                    {
+                        // The file did not exist before the tool ran; restore = remove it.
+                        File.Delete(target.OriginalPath);
+                    }
+                }
+
+                return Task.FromResult(true);
+            }
+            catch
+            {
+                return Task.FromResult(false);
+            }
         }
 
         public Task LogExecutionAsync(ToolExecutionAuditEntry entry)
@@ -261,5 +361,65 @@ namespace SupportAssistant.Core.Security
 
             return issues;
         }
+
+        /// <summary>
+        /// Builds a plain-text preview of a tool execution for the approval dialog.
+        /// </summary>
+        private static string BuildApprovalPreview(ITool tool, Dictionary<string, object> parameters)
+        {
+            var lines = new List<string>
+            {
+                $"Tool: {tool.Name}",
+                tool.Description ?? string.Empty,
+                tool.IsModifying ? "This operation MODIFIES the system." : "This operation is read-only."
+            };
+
+            if (parameters.Count > 0)
+            {
+                lines.Add("Parameters:");
+                foreach (var parameter in parameters.OrderBy(p => p.Key))
+                {
+                    lines.Add($"  {parameter.Key} = {parameter.Value}");
+                }
+            }
+
+            return string.Join(Environment.NewLine, lines);
+        }
+
+        /// <summary>
+        /// Extracts candidate target file paths from a tool's parameters. Backups apply to file-
+        /// modifying tools (e.g. WriteFileContents) whose path is carried in a path-like parameter.
+        /// </summary>
+        private static IEnumerable<string> ExtractTargetFilePaths(Dictionary<string, object> parameters)
+        {
+            foreach (var parameter in parameters)
+            {
+                if (parameter.Value is null)
+                {
+                    continue;
+                }
+
+                var key = parameter.Key;
+                var value = parameter.Value.ToString() ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    continue;
+                }
+
+                var isPathKey = key.Contains("path", StringComparison.OrdinalIgnoreCase)
+                                || key.Contains("file", StringComparison.OrdinalIgnoreCase);
+                var looksLikePath = value.Contains(Path.DirectorySeparatorChar)
+                                    || value.Contains(Path.AltDirectorySeparatorChar)
+                                    || Path.GetExtension(value).Length > 0;
+
+                if (isPathKey || looksLikePath)
+                {
+                    yield return value;
+                }
+            }
+        }
+
+        /// <summary>Records what was backed up for a single target file so restore can reverse it.</summary>
+        private sealed record BackupTarget(string OriginalPath, string? BackupPath, bool ExistedBefore);
     }
 }

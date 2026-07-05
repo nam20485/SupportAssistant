@@ -13,6 +13,7 @@ using SupportAssistant.Core.Engines;
 using SupportAssistant.Core.Security;
 using SupportAssistant.Core.Services;
 using SupportAssistant.Core.Tools;
+using SupportAssistant.Security;
 using SupportAssistant.ViewModels;
 using SupportAssistant.Views;
 
@@ -151,14 +152,16 @@ public partial class App : Application
 
         // Agent / tools / security (Phase 4 Stage 2). The tool registry auto-discovers concrete
         // ITool implementations (e.g. ReadFileContents) via reflection. The orchestrator consumes the
-        // RAG services (folded into its prompts) and runs the registered SLM.
+        // RAG services (folded into its prompts) and runs the registered SLM. The security manager
+        // uses the Avalonia HITL approval surface for modifying operations (Stage 3 T3.2).
+        services.AddSingleton<IUserInteraction>(_ => Security.AvaloniaUserInteraction.FromApplication());
         services.AddSingleton<IToolRegistry>(sp =>
         {
             var registry = new ToolRegistry();
             registry.DiscoverAndRegisterTools();
             return registry;
         });
-        services.AddSingleton<ISecurityManager, SecurityManager>();
+        services.AddSingleton<ISecurityManager>(sp => new SecurityManager(sp.GetRequiredService<IUserInteraction>()));
         services.AddSingleton<IAgentOrchestrator>(sp =>
         {
             var orchestrator = new AgentOrchestrator(
