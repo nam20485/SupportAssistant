@@ -20,12 +20,12 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v6
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       with:
         fetch-depth: 0
     
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
     
@@ -39,7 +39,7 @@ jobs:
       run: dotnet test --configuration Release --no-build --verbosity normal --logger trx --results-directory "test-results"
     
     - name: Upload test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.1
       if: always()
       with:
         name: test-results
@@ -58,12 +58,12 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       with:
         fetch-depth: 0
     
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
     
@@ -93,7 +93,7 @@ jobs:
         Compress-Archive -Path "dist/${{ matrix.runtime }}/*" -DestinationPath "SupportAssistant-$version-${{ matrix.runtime }}-portable.zip"
     
     - name: Upload portable package
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.1
       with:
         name: SupportAssistant-${{ matrix.runtime }}-portable
         path: SupportAssistant-*-${{ matrix.runtime }}-portable.zip
@@ -101,14 +101,12 @@ jobs:
     
     - name: Upload to release
       if: github.event_name == 'release'
-      uses: actions/upload-release-asset@v1
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ github.event.release.upload_url }}
-        asset_path: SupportAssistant-*-${{ matrix.runtime }}-portable.zip
-        asset_name: SupportAssistant-${{ github.event.release.tag_name }}-${{ matrix.runtime }}-portable.zip
-        asset_content_type: application/zip
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh release upload ${{ github.event.release.tag_name }} `
+          SupportAssistant-*-${{ matrix.runtime }}-portable.zip `
+          --clobber
   
   msix-package:
     name: Create MSIX Package
@@ -118,12 +116,12 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       with:
         fetch-depth: 0
     
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
     
@@ -147,7 +145,7 @@ jobs:
     
     - name: Upload MSIX package
       if: success()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.1
       with:
         name: SupportAssistant-MSIX
         path: dist/msix/*.msix
