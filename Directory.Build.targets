@@ -1,0 +1,49 @@
+<Project>
+  <!--
+    linux-x64 native runtime wiring for Microsoft.ML.OnnxRuntime.
+
+    Two problems arise on the Linux dev host that InferenceEngine.Core solves in its own csproj
+    (but PackageReference targets do not propagate to consumers, so we replicate them here for
+    every project: Core, the Avalonia app, and the tests):
+
+    1. The OnnxRuntime 1.24.x P/Invoke uses a Windows-style DllImport name ("onnxruntime.dll").
+       .NET's P/Invoke search probes for onnxruntime.dll.so / libonnxruntime.dll.so /
+       onnxruntime.dll / libonnxruntime.dll in the output dir — NOT for libonnxruntime.so (the
+       actual filename the package ships). Create symlinks from the probed names to the shipped
+       .so. (Mirrors InferenceEngine.Core's SymlinkLinuxNativeLibsForPInvoke.)
+
+    2. InferenceEngine.Core pulls InferenceEngine.ROCm.Runtime.linux-x64 transitively, which ships a
+       ROCm-linked libonnxruntime.so that cannot be dlopened on hosts lacking the ROCm userspace
+       runtime (libhsa-runtime64.so et al.). Restore Microsoft.ML.OnnxRuntime's CPU-only build to
+       the output; it dynamically loads the ROCm execution provider at runtime when
+       InferenceEngine.Core's IsRocmRuntimeUsable() reports it usable, so ROCm acceleration is
+       preserved on properly-equipped hosts. (Mirrors RestoreUpstreamCpuLibOnLinux.)
+
+    The lib's targets gate on an explicit RuntimeIdentifier; we additionally cover RIDless builds
+    (dotnet test) by placing the lib flat in OutDir where the symlinks resolve. No-op on Windows
+    (native onnxruntime.dll / DirectML) and macOS (CoreML).
+  -->
+  <Target Name="WireOnnxRuntimeNativeLibOnLinux" AfterTargets="Build"
+          Condition="$([MSBuild]::IsOSPlatform('Linux')) And '$(OS)' == 'Unix'">
+    <PropertyGroup>
+      <!-- CPU-only libonnxruntime.so from the base OnnxRuntime package (NuGet package root). -->
+      <_CpuOrtLibSource>$(NuGetPackageRoot)microsoft.ml.onnxruntime/$(OnnxRuntimeVersion)/runtimes/linux-x64/native/libonnxruntime.so</_CpuOrtLibSource>
+    </PropertyGroup>
+
+    <!-- (1) Place the CPU lib flat in OutDir (so the symlinks resolve) and overwrite the ROCm
+         build under runtimes/linux-x64/native/ wherever the SDK put it. -->
+    <Copy SourceFiles="$(_CpuOrtLibSource)" DestinationFolder="$(OutDir)"
+          Condition="Exists('$(_CpuOrtLibSource)')" SkipUnchangedFiles="true" ContinueOnError="true" />
+    <Copy SourceFiles="$(_CpuOrtLibSource)" DestinationFolder="$(OutDir)runtimes/linux-x64/native/"
+          Condition="Exists('$(_CpuOrtLibSource)') And Exists('$(OutDir)runtimes/linux-x64/native/libonnxruntime.so')"
+          SkipUnchangedFiles="true" ContinueOnError="true" />
+
+    <!-- (2) Remove any stray Windows PE native libs so dlopen does not reject them first. -->
+    <Delete Files="$(OutDir)onnxruntime.dll;$(OutDir)ortextensions.dll;$(OutDir)onnxruntime_providers_shared.dll"
+            ContinueOnError="true" />
+
+    <!-- (3) Symlink the P/Invoke-probed names to libonnxruntime.so in OutDir. -->
+    <Exec Command="ln -sf libonnxruntime.so &quot;$(OutDir)onnxruntime.dll&quot;" ContinueOnError="true" />
+    <Exec Command="ln -sf libonnxruntime.so &quot;$(OutDir)libonnxruntime.dll.so&quot;" ContinueOnError="true" />
+  </Target>
+</Project>

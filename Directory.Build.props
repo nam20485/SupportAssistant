@@ -17,7 +17,7 @@
     <!-- Product Information -->
     <Product>SupportAssistant</Product>
     <Company>Open Source</Company>
-    <Copyright>Copyright © 2025 Open Source Contributors</Copyright>
+    <Copyright>Copyright © 2026 SupportAssistant Contributors</Copyright>
     <Description>Intelligent technical assistance desktop application with local AI</Description>
     
     <!-- Build Configuration -->
@@ -26,6 +26,14 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsAsErrors />
+    <!-- Single source of truth for the OnnxRuntime version (referenced by SupportAssistant.Core
+         and by the native-lib swap target in Directory.Build.targets). -->
+    <OnnxRuntimeVersion>1.24.1</OnnxRuntimeVersion>
+    <!-- Microsoft.ML.OnnxRuntime.Extensions (transitive via InferenceEngine.Core) ships macOS
+         version-specific RID assets that .NET 8+ ignores (NETSDK1206). This app targets
+         win-x64/win-arm64 for distribution and linux-x64 for the dev host, never macOS, so
+         the warning is benign and applies solution-wide. -->
+    <NoWarn>$(NoWarn);NETSDK1206</NoWarn>
     
     <!-- Performance -->
     <TieredCompilation>true</TieredCompilation>
@@ -47,9 +55,9 @@
     <PackageCompany>$(Company)</PackageCompany>
     <PackageCopyright>$(Copyright)</PackageCopyright>
     <PackageProjectUrl>https://github.com/nam20485/SupportAssistant</PackageProjectUrl>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <PackageTags>ai;assistant;desktop;avalonia;onnx;local;privacy</PackageTags>
+    <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <PackageTags>ai;assistant;desktop;avalonia;onnx;local;privacy;agpl;copyleft</PackageTags>
     <RepositoryUrl>https://github.com/nam20485/SupportAssistant.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
   </PropertyGroup>
