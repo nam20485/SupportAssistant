@@ -1,0 +1,52 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="SupportAssistant.App"
+             xmlns:local="using:SupportAssistant"
+             RequestedThemeVariant="Default">
+             <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+
+    <Application.DataTemplates>
+        <local:ViewLocator/>
+    </Application.DataTemplates>
+
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.ThemeDictionaries>
+                <!-- Light theme brushes -->
+                <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="AppCardBackground" Color="#FFFFFFFF"/>
+                    <SolidColorBrush x:Key="AppPanelBackground" Color="#FFF8F8F8"/>
+                    <SolidColorBrush x:Key="AppStatusBarBackground" Color="#FFFAFAFA"/>
+                    <SolidColorBrush x:Key="AppSubtleBackground" Color="#FFF0F0F0"/>
+                    <SolidColorBrush x:Key="AppBorderBrush" Color="#FFE0E0E0"/>
+                    <SolidColorBrush x:Key="AppSuccessBackground" Color="#FFE8F5E8"/>
+                    <SolidColorBrush x:Key="AppMessageUser" Color="#FFE3F2FD"/>
+                    <SolidColorBrush x:Key="AppMessageAssistant" Color="#FFF5F5F5"/>
+                    <SolidColorBrush x:Key="AppMessageSystem" Color="#FFFFF3E0"/>
+                    <SolidColorBrush x:Key="AppMutedForeground" Color="#FF808080"/>
+                    <SolidColorBrush x:Key="AppSecondaryForeground" Color="#FF666666"/>
+                    <SolidColorBrush x:Key="AppStrongForeground" Color="#FF333333"/>
+                </ResourceDictionary>
+                <!-- Dark theme brushes -->
+                <ResourceDictionary x:Key="Dark">
+                    <SolidColorBrush x:Key="AppCardBackground" Color="#FF2B2B2B"/>
+                    <SolidColorBrush x:Key="AppPanelBackground" Color="#FF1F1F1F"/>
+                    <SolidColorBrush x:Key="AppStatusBarBackground" Color="#FF1A1A1A"/>
+                    <SolidColorBrush x:Key="AppSubtleBackground" Color="#FF2D2D2D"/>
+                    <SolidColorBrush x:Key="AppBorderBrush" Color="#FF3A3A3A"/>
+                    <SolidColorBrush x:Key="AppSuccessBackground" Color="#FF1B3320"/>
+                    <SolidColorBrush x:Key="AppMessageUser" Color="#FF1B3A5C"/>
+                    <SolidColorBrush x:Key="AppMessageAssistant" Color="#FF2D2D2D"/>
+                    <SolidColorBrush x:Key="AppMessageSystem" Color="#FF3D2E14"/>
+                    <SolidColorBrush x:Key="AppMutedForeground" Color="#FF9A9A9A"/>
+                    <SolidColorBrush x:Key="AppSecondaryForeground" Color="#FFA0A0A0"/>
+                    <SolidColorBrush x:Key="AppStrongForeground" Color="#FFE0E0E0"/>
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+   
+    <Application.Styles>
+        <FluentTheme />
+    </Application.Styles>
+</Application>
