@@ -136,7 +136,6 @@ jobs:
           --no-restore `
           /p:WindowsPackageType=MSIX `
           /p:GenerateAppInstallerFile=true
-      continue-on-error: true
     
     - name: Upload MSIX package
       if: success()
