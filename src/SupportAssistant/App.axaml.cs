@@ -7,7 +7,9 @@ using System.Reactive.Linq;
 using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
 using ReactiveUI;
+using InferenceEngine.Core.Text;
 using SupportAssistant.Core.Agent;
+using SupportAssistant.Core.Engines;
 using SupportAssistant.Core.Security;
 using SupportAssistant.Core.Services;
 using SupportAssistant.Core.Tools;
@@ -108,15 +110,37 @@ public partial class App : Application
         // Core services
         services.AddSingleton<IOnnxRuntimeService, OnnxRuntimeService>();
         services.AddSingleton<IConfigurationService, DefaultConfigurationService>();
-        // Create the embedding service through the factory so the application falls back to
-        // SimpleEmbeddingService when the ONNX embedding model is missing or fails to initialize.
-        services.AddSingleton<IEmbeddingServiceFactory, EmbeddingServiceFactory>();
+
+        // Inference engines (Phase 4 Stage 1). The library fetches models + tokenizer assets lazily
+        // on first use; options are derived from the user's GPU/execution-provider setting.
+        services.AddSingleton(sp =>
+        {
+            var settings = sp.GetRequiredService<ISettingsService>();
+            var options = InferenceOptionsFactory.Create(settings);
+            return new TextEmbeddingEngine(options);
+        });
+        services.AddSingleton(sp =>
+        {
+            var settings = sp.GetRequiredService<ISettingsService>();
+            var options = InferenceOptionsFactory.Create(settings);
+            return new TextGenerationEngine(options);
+        });
+
+        // Embedding service (adapter over the embedding engine; falls back to simple embeddings).
+        services.AddSingleton<IEmbeddingServiceFactory>(sp => new EmbeddingServiceFactory(
+            sp.GetRequiredService<TextEmbeddingEngine>(),
+            sp.GetRequiredService<IConfigurationService>()));
         services.AddSingleton<IEmbeddingService>(sp =>
         {
             var factory = sp.GetRequiredService<IEmbeddingServiceFactory>();
             // Resolve off the current (potentially UI) thread to avoid a sync-over-async deadlock.
             return Task.Run(() => factory.CreateEmbeddingServiceAsync()).GetAwaiter().GetResult();
         });
+
+        // Language-model service (adapter over the generation engine).
+        services.AddSingleton<ISLMService>(sp => new OnnxSLMService(
+            sp.GetRequiredService<TextGenerationEngine>()));
+
         services.AddSingleton<IVectorStorageService, FileVectorStorageService>();
         services.AddSingleton<ITextChunkingService, TextChunkingService>();
         services.AddSingleton<IKnowledgeBaseService, KnowledgeBaseService>();
@@ -127,7 +151,7 @@ public partial class App : Application
 
         // Agent / tools / security (Phase 4 Stage 2). The tool registry auto-discovers concrete
         // ITool implementations (e.g. ReadFileContents) via reflection. The orchestrator consumes the
-        // RAG services (folded into its prompts) and runs the real SLM when one is registered.
+        // RAG services (folded into its prompts) and runs the registered SLM.
         services.AddSingleton<IToolRegistry>(sp =>
         {
             var registry = new ToolRegistry();
@@ -135,7 +159,16 @@ public partial class App : Application
             return registry;
         });
         services.AddSingleton<ISecurityManager, SecurityManager>();
-        services.AddSingleton<IAgentOrchestrator, AgentOrchestrator>();
+        services.AddSingleton<IAgentOrchestrator>(sp =>
+        {
+            var orchestrator = new AgentOrchestrator(
+                sp.GetRequiredService<IToolRegistry>(),
+                sp.GetRequiredService<ISecurityManager>(),
+                sp.GetRequiredService<IContextRetrievalService>(),
+                sp.GetRequiredService<IQueryProcessingService>());
+            orchestrator.RegisterSLMService(sp.GetRequiredService<ISLMService>());
+            return orchestrator;
+        });
 
         // ViewModels
         services.AddTransient<MainWindowViewModel>();

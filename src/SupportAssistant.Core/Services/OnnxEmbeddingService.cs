@@ -1,127 +1,74 @@
-using Microsoft.ML.OnnxRuntime;
-using Microsoft.ML.OnnxRuntime.Tensors;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+using InferenceEngine.Core.Text;
+using Microsoft.Extensions.Logging;
 
 namespace SupportAssistant.Core.Services;
 
 /// <summary>
-/// ONNX-based embedding service that uses Microsoft Phi-3-mini or compatible models
-/// for generating semantic embeddings.
+/// Embedding service that delegates to the library's <see cref="TextEmbeddingEngine"/>
+/// (all-MiniLM-L6-v2: real tokenization + ONNX inference + pooling/normalization, with the engine
+/// owning model/tokenizer fetching). Falls back to a deterministic hash embedding only when the
+/// engine is unavailable (no model/network) or a prediction fails.
 /// </summary>
 public class OnnxEmbeddingService : IEmbeddingService, IDisposable
 {
-    private readonly IOnnxRuntimeService _onnxRuntimeService;
-    private InferenceSession? _session;
-    private SessionOptions? _sessionOptions;
-    private bool _isInitialized;
+    private readonly TextEmbeddingEngine _engine;
+    private readonly ILogger<OnnxEmbeddingService>? _logger;
     private bool _disposed;
-    private int _embeddingDimension = 384; // Default, will be updated based on model
-    private readonly Dictionary<string, long[]> _inputShapes = new();
-    private readonly Dictionary<string, string> _inputNames = new();
+    private int _embeddingDimension = 384;
 
-    public OnnxEmbeddingService(IOnnxRuntimeService onnxRuntimeService)
+    public OnnxEmbeddingService(TextEmbeddingEngine engine, ILogger<OnnxEmbeddingService>? logger = null)
     {
-        _onnxRuntimeService = onnxRuntimeService ?? throw new ArgumentNullException(nameof(onnxRuntimeService));
+        _engine = engine ?? throw new ArgumentNullException(nameof(engine));
+        _logger = logger;
     }
 
-    public async Task<bool> InitializeAsync(string modelPath)
-    {
-        try
-        {
-            if (string.IsNullOrWhiteSpace(modelPath))
-            {
-                throw new ArgumentException("Model path cannot be null or empty", nameof(modelPath));
-            }
-
-            if (!File.Exists(modelPath))
-            {
-                // For development, if model doesn't exist, we'll use a fallback mode
-                // In production, this should be an error
-                Console.WriteLine($"ONNX model not found at {modelPath}. Using fallback embedding generation.");
-                _isInitialized = true;
-                return await Task.FromResult(true);
-            }
-
-            // Initialize ONNX Runtime
-            _onnxRuntimeService.Initialize();
-            
-            // Create session options with DirectML if available
-            _sessionOptions = _onnxRuntimeService.CreateSessionOptions();
-            
-            // Load the ONNX model
-            _session = new InferenceSession(modelPath, _sessionOptions);
-            
-            // Inspect model metadata
-            await InspectModelMetadataAsync();
-            
-            _isInitialized = true;
-            
-            Console.WriteLine($"ONNX embedding model loaded successfully from {modelPath}");
-            Console.WriteLine($"DirectML available: {_onnxRuntimeService.IsDirectMLAvailable()}");
-            Console.WriteLine($"Available providers: {string.Join(", ", _onnxRuntimeService.GetAvailableProviders())}");
-            
-            return true;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Failed to initialize ONNX embedding service: {ex.Message}");
-            
-            // Fall back to non-ONNX mode for development
-            _isInitialized = true;
-            return false;
-        }
-    }
+    /// <summary>
+    /// Retained for interface compatibility. The engine loads lazily on first prediction (and
+    /// fetches its model/tokenizer on demand), so there is nothing to pre-initialize here.
+    /// </summary>
+    public Task<bool> InitializeAsync(string modelPath) => Task.FromResult(true);
 
     public async Task<float[]> GenerateEmbeddingAsync(string text)
     {
-        if (!_isInitialized)
-            throw new InvalidOperationException("Service not initialized");
-
         if (string.IsNullOrWhiteSpace(text))
-            return new float[_embeddingDimension];
-
-        // If no ONNX session available, use fallback
-        if (_session == null)
         {
-            return await GenerateFallbackEmbeddingAsync(text);
+            return new float[_embeddingDimension];
         }
 
         try
         {
-            return await GenerateOnnxEmbeddingAsync(text);
+            var embedding = await _engine.PredictAsync(text).ConfigureAwait(false);
+            if (embedding is { Length: > 0 })
+            {
+                _embeddingDimension = embedding.Length;
+                return embedding;
+            }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"ONNX embedding generation failed, using fallback: {ex.Message}");
-            return await GenerateFallbackEmbeddingAsync(text);
+            _logger?.LogWarning(ex, "ONNX embedding prediction failed; using hash fallback.");
         }
+
+        return await GenerateFallbackEmbeddingAsync(text).ConfigureAwait(false);
     }
 
     public async Task<IEnumerable<float[]>> GenerateEmbeddingsBatchAsync(IEnumerable<string> texts)
     {
-        if (!_isInitialized)
-            throw new InvalidOperationException("Service not initialized");
-
         var embeddings = new List<float[]>();
-        
-        // For now, process individually. In the future, we could implement true batch processing
         foreach (var text in texts)
         {
-            embeddings.Add(await GenerateEmbeddingAsync(text));
+            embeddings.Add(await GenerateEmbeddingAsync(text).ConfigureAwait(false));
         }
 
         return embeddings;
     }
 
-    public int GetEmbeddingDimension()
-    {
-        return _embeddingDimension;
-    }
+    public int GetEmbeddingDimension() => _embeddingDimension;
 
     public float CalculateCosineSimilarity(float[] embedding1, float[] embedding2)
     {
@@ -148,113 +95,39 @@ public class OnnxEmbeddingService : IEmbeddingService, IDisposable
         return dotProduct / (magnitude1 * magnitude2);
     }
 
-    private async Task InspectModelMetadataAsync()
-    {
-        if (_session == null) return;
-
-        try
-        {
-            // Examine input metadata
-            var inputMetadata = _session.InputMetadata;
-            foreach (var input in inputMetadata)
-            {
-                var inputName = input.Key;
-                var metadata = input.Value;
-                
-                Console.WriteLine($"Input: {inputName}, Type: {metadata.ElementType}, Shape: [{string.Join(", ", metadata.Dimensions)}]");
-                
-                _inputNames[inputName] = inputName;
-                _inputShapes[inputName] = metadata.Dimensions.Select(d => (long)d).ToArray();
-            }
-
-            // Examine output metadata to determine embedding dimension
-            var outputMetadata = _session.OutputMetadata;
-            foreach (var output in outputMetadata)
-            {
-                var outputName = output.Key;
-                var metadata = output.Value;
-                
-                Console.WriteLine($"Output: {outputName}, Type: {metadata.ElementType}, Shape: [{string.Join(", ", metadata.Dimensions)}]");
-                
-                // Try to infer embedding dimension from output shape
-                if (metadata.Dimensions.Length > 0)
-                {
-                    var lastDim = metadata.Dimensions[metadata.Dimensions.Length - 1];
-                    if (lastDim > 0)
-                    {
-                        _embeddingDimension = (int)lastDim;
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Failed to inspect model metadata: {ex.Message}");
-        }
-
-        await Task.CompletedTask;
-    }
-
-    private async Task<float[]> GenerateOnnxEmbeddingAsync(string text)
-    {
-        if (_session == null) 
-            throw new InvalidOperationException("ONNX session not available");
-
-        // This is a placeholder implementation
-        // In a real implementation, we would:
-        // 1. Tokenize the text using the appropriate tokenizer for Phi-3
-        // 2. Create input tensors with the tokenized input
-        // 3. Run inference to get embeddings
-        // 4. Extract the appropriate embedding representation
-        
-        // For now, return a simple fallback
-        Console.WriteLine("ONNX embedding generation not yet fully implemented, using fallback");
-        return await GenerateFallbackEmbeddingAsync(text);
-    }
-
+    /// <summary>
+    /// Deterministic hash-based embedding used when the real model is unavailable. Mirrors the
+    /// legacy fallback so retrieval still works in degraded/development environments.
+    /// </summary>
     private async Task<float[]> GenerateFallbackEmbeddingAsync(string text)
     {
-        // Use a deterministic approach that creates reasonable similarities
-        // This is similar to SimpleEmbeddingService but with improvements
-        
         var embedding = new float[_embeddingDimension];
         var normalizedText = text.ToLowerInvariant().Trim();
-        
-        // Use multiple hash seeds to create different features
         var words = normalizedText.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        
-        // Create embedding based on word hashes and text features
+
         for (var i = 0; i < _embeddingDimension; i++)
         {
             var featureValue = 0f;
-            
-            // Word-based features
             foreach (var word in words)
             {
-                var wordHash = word.GetHashCode();
-                var wordSeed = wordHash ^ (i * 17); // Different feature for each dimension
+                var wordSeed = word.GetHashCode() ^ (i * 17);
                 var wordRandom = new Random(wordSeed);
-                featureValue += (float)(wordRandom.NextDouble() * 2.0 - 1.0) / words.Length;
+                featureValue += (float)(wordRandom.NextDouble() * 2.0 - 1.0) / Math.Max(1, words.Length);
             }
-            
-            // Text-level features
-            var textHash = normalizedText.GetHashCode();
-            var textSeed = textHash ^ (i * 31);
+
+            var textSeed = normalizedText.GetHashCode() ^ (i * 31);
             var textRandom = new Random(textSeed);
-            var textFeature = (float)(textRandom.NextDouble() * 2.0 - 1.0) * 0.3f;
-            
-            embedding[i] = featureValue + textFeature;
+            featureValue += (float)(textRandom.NextDouble() * 2.0 - 1.0) * 0.3f;
+            embedding[i] = featureValue;
         }
-        
-        // Add some structured features for better similarity
+
         if (_embeddingDimension > 10)
         {
             embedding[0] += Math.Min(normalizedText.Length / 1000f, 1f) * 0.5f;
             embedding[1] += Math.Min(words.Length / 100f, 1f) * 0.5f;
             embedding[2] += Math.Min(normalizedText.Distinct().Count() / 50f, 1f) * 0.5f;
         }
-        
-        // Normalize to unit vector
+
         var magnitude = (float)Math.Sqrt(embedding.Sum(x => x * x));
         if (magnitude > 0)
         {
@@ -263,8 +136,8 @@ public class OnnxEmbeddingService : IEmbeddingService, IDisposable
                 embedding[i] /= magnitude;
             }
         }
-        
-        return await Task.FromResult(embedding);
+
+        return await Task.FromResult(embedding).ConfigureAwait(false);
     }
 
     protected virtual void Dispose(bool disposing)
@@ -273,8 +146,7 @@ public class OnnxEmbeddingService : IEmbeddingService, IDisposable
         {
             if (disposing)
             {
-                _session?.Dispose();
-                _sessionOptions?.Dispose();
+                (_engine as IDisposable)?.Dispose();
             }
 
             _disposed = true;

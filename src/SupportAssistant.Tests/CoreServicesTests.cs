@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Linq;
 using FluentAssertions;
+using InferenceEngine.Core.Text;
 using SupportAssistant.Core.Services;
 
 namespace SupportAssistant.Tests;
@@ -328,7 +329,7 @@ public class OnnxEmbeddingServiceTests
     {
         // Arrange
         var onnxRuntimeService = new OnnxRuntimeService();
-        var service = new OnnxEmbeddingService(onnxRuntimeService);
+        var service = new OnnxEmbeddingService(new TextEmbeddingEngine(new InferenceEngine.Core.InferenceEngineOptions { ModelPath = "/nonexistent/hermetic-test-model.onnx" }));
 
         // Act
         var result = await service.InitializeAsync("non_existent_model.onnx");
@@ -342,7 +343,7 @@ public class OnnxEmbeddingServiceTests
     {
         // Arrange
         var onnxRuntimeService = new OnnxRuntimeService();
-        var service = new OnnxEmbeddingService(onnxRuntimeService);
+        var service = new OnnxEmbeddingService(new TextEmbeddingEngine(new InferenceEngine.Core.InferenceEngineOptions { ModelPath = "/nonexistent/hermetic-test-model.onnx" }));
         await service.InitializeAsync("non_existent_model.onnx");
 
         // Act
@@ -359,7 +360,7 @@ public class OnnxEmbeddingServiceTests
     {
         // Arrange
         var onnxRuntimeService = new OnnxRuntimeService();
-        var service = new OnnxEmbeddingService(onnxRuntimeService);
+        var service = new OnnxEmbeddingService(new TextEmbeddingEngine(new InferenceEngine.Core.InferenceEngineOptions { ModelPath = "/nonexistent/hermetic-test-model.onnx" }));
         await service.InitializeAsync("non_existent_model.onnx");
         var texts = new[] { "Text 1", "Text 2", "Text 3" };
 
@@ -377,7 +378,7 @@ public class OnnxEmbeddingServiceTests
     {
         // Arrange
         var onnxRuntimeService = new OnnxRuntimeService();
-        var service = new OnnxEmbeddingService(onnxRuntimeService);
+        var service = new OnnxEmbeddingService(new TextEmbeddingEngine(new InferenceEngine.Core.InferenceEngineOptions { ModelPath = "/nonexistent/hermetic-test-model.onnx" }));
         var embedding = new[] { 1f, 0f, 0f, 0f };
 
         // Act
@@ -392,7 +393,7 @@ public class OnnxEmbeddingServiceTests
     {
         // Arrange
         var onnxRuntimeService = new OnnxRuntimeService();
-        var service = new OnnxEmbeddingService(onnxRuntimeService);
+        var service = new OnnxEmbeddingService(new TextEmbeddingEngine(new InferenceEngine.Core.InferenceEngineOptions { ModelPath = "/nonexistent/hermetic-test-model.onnx" }));
 
         // Act
         var dimension = service.GetEmbeddingDimension();
@@ -406,7 +407,7 @@ public class OnnxEmbeddingServiceTests
     {
         // Arrange
         var onnxRuntimeService = new OnnxRuntimeService();
-        var service = new OnnxEmbeddingService(onnxRuntimeService);
+        var service = new OnnxEmbeddingService(new TextEmbeddingEngine(new InferenceEngine.Core.InferenceEngineOptions { ModelPath = "/nonexistent/hermetic-test-model.onnx" }));
 
         // Act & Assert
         var dispose = () => service.Dispose();
@@ -471,13 +472,14 @@ public class ConfigurationServiceTests
 
 public class EmbeddingServiceFactoryTests
 {
+    private static TextEmbeddingEngine CreateEmbeddingEngine() => new(new InferenceEngine.Core.InferenceEngineOptions());
+
     [Fact]
     public async Task CreateEmbeddingServiceAsync_ShouldReturnValidService()
     {
         // Arrange
-        var onnxRuntimeService = new OnnxRuntimeService();
         var configurationService = new DefaultConfigurationService();
-        var factory = new EmbeddingServiceFactory(onnxRuntimeService, configurationService);
+        var factory = new EmbeddingServiceFactory(CreateEmbeddingEngine(), configurationService);
 
         // Act
         var embeddingService = await factory.CreateEmbeddingServiceAsync();
@@ -485,7 +487,7 @@ public class EmbeddingServiceFactoryTests
         // Assert
         embeddingService.Should().NotBeNull();
         embeddingService.GetEmbeddingDimension().Should().BeGreaterThan(0);
-        
+
         // Clean up if it's disposable
         if (embeddingService is IDisposable disposableService)
         {
@@ -505,7 +507,7 @@ public class EmbeddingServiceFactoryTests
 
         await Assert.ThrowsAsync<ArgumentNullException>(() =>
         {
-            var factory = new EmbeddingServiceFactory(new OnnxRuntimeService(), null!);
+            var factory = new EmbeddingServiceFactory(CreateEmbeddingEngine(), null!);
             return factory.CreateEmbeddingServiceAsync();
         });
     }
@@ -527,7 +529,7 @@ public class Phase2Task1CompletionTests
         onnxRuntimeService.Initialize(); // Initialize the service
         
         var configurationService = new DefaultConfigurationService();
-        var embeddingServiceFactory = new EmbeddingServiceFactory(onnxRuntimeService, configurationService);
+        var embeddingServiceFactory = new EmbeddingServiceFactory(new TextEmbeddingEngine(new InferenceEngine.Core.InferenceEngineOptions { ModelPath = "/nonexistent/hermetic-test-model.onnx" }), configurationService);
         var embeddingService = await embeddingServiceFactory.CreateEmbeddingServiceAsync();
         
         // Assert - All components should initialize successfully
@@ -562,12 +564,12 @@ public class Phase2Task1CompletionTests
         var configService = new DefaultConfigurationService();
         configService.Should().NotBeNull();
         
-        // ONNX Embedding service 
-        var embeddingService = new OnnxEmbeddingService(onnxService);
+        // ONNX Embedding service (wraps the embedding engine)
+        var embeddingService = new OnnxEmbeddingService(new TextEmbeddingEngine(new InferenceEngine.Core.InferenceEngineOptions { ModelPath = "/nonexistent/hermetic-test-model.onnx" }));
         embeddingService.Should().NotBeNull();
         
         // Embedding service factory
-        var factory = new EmbeddingServiceFactory(onnxService, configService);
+        var factory = new EmbeddingServiceFactory(new TextEmbeddingEngine(new InferenceEngine.Core.InferenceEngineOptions { ModelPath = "/nonexistent/hermetic-test-model.onnx" }), configService);
         factory.Should().NotBeNull();
         
         embeddingService.Dispose();

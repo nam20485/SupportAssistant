@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using InferenceEngine.Core.Text;
 using SupportAssistant.Core.Agent;
 using SupportAssistant.Core.Security;
 using SupportAssistant.Core.Services;
@@ -22,7 +23,19 @@ public class MainWindowViewModelResolutionTests
         services.AddSingleton<ISettingsService, SettingsService>();
         services.AddSingleton<IOnnxRuntimeService, OnnxRuntimeService>();
         services.AddSingleton<IConfigurationService, DefaultConfigurationService>();
+
+        // Inference engines + adapters (Phase 4 Stage 1) — mirrors App.ConfigureServices.
+        services.AddSingleton<TextEmbeddingEngine>(_ =>
+            new TextEmbeddingEngine(new InferenceEngine.Core.InferenceEngineOptions()));
+        services.AddSingleton<TextGenerationEngine>(_ =>
+            new TextGenerationEngine(new InferenceEngine.Core.InferenceEngineOptions()));
+        services.AddSingleton<IEmbeddingServiceFactory>(sp => new EmbeddingServiceFactory(
+            sp.GetRequiredService<TextEmbeddingEngine>(),
+            sp.GetRequiredService<IConfigurationService>()));
         services.AddSingleton<IEmbeddingService, OnnxEmbeddingService>();
+        services.AddSingleton<ISLMService>(sp => new OnnxSLMService(
+            sp.GetRequiredService<TextGenerationEngine>()));
+
         services.AddSingleton<IVectorStorageService, FileVectorStorageService>();
         services.AddSingleton<ITextChunkingService, TextChunkingService>();
         services.AddSingleton<IKnowledgeBaseService, KnowledgeBaseService>();
@@ -39,7 +52,16 @@ public class MainWindowViewModelResolutionTests
             return registry;
         });
         services.AddSingleton<ISecurityManager, SecurityManager>();
-        services.AddSingleton<IAgentOrchestrator, AgentOrchestrator>();
+        services.AddSingleton<IAgentOrchestrator>(sp =>
+        {
+            var orchestrator = new AgentOrchestrator(
+                sp.GetRequiredService<IToolRegistry>(),
+                sp.GetRequiredService<ISecurityManager>(),
+                sp.GetRequiredService<IContextRetrievalService>(),
+                sp.GetRequiredService<IQueryProcessingService>());
+            orchestrator.RegisterSLMService(sp.GetRequiredService<ISLMService>());
+            return orchestrator;
+        });
 
         services.AddTransient<MainWindowViewModel>();
         services.AddTransient<ChatViewModel>();

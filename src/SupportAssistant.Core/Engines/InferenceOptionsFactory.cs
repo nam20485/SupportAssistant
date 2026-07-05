@@ -2,16 +2,16 @@ using System;
 using System.IO;
 using InferenceEngine.Core;
 using InferenceEngine.Core.ModelProviders;
-using Microsoft.Extensions.Logging;
 using SupportAssistant.Core.Services;
 
 namespace SupportAssistant.Core.Engines
 {
     /// <summary>
-    /// Builds <see cref="InferenceEngineOptions"/> from application settings and resolves the model
-    /// for an engine. Centralizes the mapping described in Phase 4 Stage 1 (GPU toggle →
+    /// Builds <see cref="InferenceEngineOptions"/> from application settings and resolves a local
+    /// model path. Centralizes the mapping described in Phase 4 Stage 1 (GPU toggle →
     /// <see cref="InferenceEngineOptions.UseGpuAcceleration"/>, <see cref="InferenceEngineOptions.DeviceId"/>,
-    /// <see cref="InferenceEngineOptions.WarmupOnLoad"/>).
+    /// <see cref="InferenceEngineOptions.WarmupOnLoad"/>). Runtime diagnostics now come from the
+    /// library's <c>InferenceEngineInfo</c> (<see cref="BaseInferenceEngine{TInput,TOutput}.EngineInfo"/>).
     /// </summary>
     public static class InferenceOptionsFactory
     {
@@ -22,10 +22,9 @@ namespace SupportAssistant.Core.Engines
         public static InferenceEngineOptions Create(ISettingsService? settings)
         {
             var useGpu = true;
-            var providerName = "Auto";
             if (settings != null)
             {
-                providerName = settings.Settings.Ai.ExecutionProvider?.Trim() ?? string.Empty;
+                var providerName = settings.Settings.Ai.ExecutionProvider?.Trim() ?? string.Empty;
                 if (providerName.Equals("CPU", StringComparison.OrdinalIgnoreCase))
                 {
                     useGpu = false;
@@ -41,10 +40,10 @@ namespace SupportAssistant.Core.Engines
         }
 
         /// <summary>
-        /// Returns a configured <see cref="InferenceEngineOptions"/> that points at <paramref name="modelPath"/>
-        /// via a <see cref="LocalModelProvider"/> when the file exists, enabling offline/bundled use.
-        /// When the file is absent the provider is left null so the engine reports unavailable (no
-        /// automatic network download is attempted, keeping first-run/CI deterministic).
+        /// Returns the configured <see cref="InferenceEngineOptions"/> with <paramref name="modelPath"/>
+        /// applied via a <see cref="LocalModelProvider"/> when the file exists (offline/bundled use).
+        /// When the file is absent the provider is left null so the library's download URLs are used
+        /// (the text engines fetch their own models + tokenizer assets).
         /// </summary>
         public static InferenceEngineOptions WithLocalModel(this InferenceEngineOptions options, string? modelPath)
         {
@@ -54,43 +53,6 @@ namespace SupportAssistant.Core.Engines
             }
 
             return options;
-        }
-
-        /// <summary>
-        /// Builds a <see cref="InferenceEngineDiagnostics"/> snapshot from an engine's public state.
-        /// </summary>
-        public static InferenceEngineDiagnostics BuildDiagnostics<TIn, TOut>(
-            BaseInferenceEngine<TIn, TOut> engine,
-            InferenceEngineOptions options,
-            ILogger? logger,
-            string? loadError = null)
-        {
-            var checks = new System.Collections.Generic.List<string>
-            {
-                $"GPU requested: {options.UseGpuAcceleration}",
-                $"Device id: {options.DeviceId}",
-                $"ROCm session active: {engine.IsRocmSessionActive}"
-            };
-
-            var isRocm = engine.IsRocmSessionActive;
-            var provider = isRocm ? "ROCm" : (OperatingSystem.IsWindows() ? "DirectML/CPU" : "CPU");
-
-            var isFallback = options.UseGpuAcceleration && !isRocm && !OperatingSystem.IsWindows();
-            string? reason = isFallback ? (loadError ?? "GPU acceleration requested but CPU session in use") : loadError;
-
-            if (loadError != null)
-            {
-                checks.Add($"Load error: {loadError}");
-            }
-
-            return new InferenceEngineDiagnostics
-            {
-                Provider = provider,
-                IsFallback = isFallback,
-                FallbackReason = reason,
-                IsRocmActive = isRocm,
-                Checks = checks
-            };
         }
     }
 }
