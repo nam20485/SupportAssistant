@@ -1,5 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
+using SupportAssistant.Core.Agent;
+using SupportAssistant.Core.Security;
 using SupportAssistant.Core.Services;
+using SupportAssistant.Core.Tools;
 using SupportAssistant.ViewModels;
 
 namespace SupportAssistant.Tests.UI;
@@ -27,6 +30,16 @@ public class MainWindowViewModelResolutionTests
         services.AddSingleton<IContextRetrievalService, ContextRetrievalService>();
         services.AddSingleton<IResponseGenerationService, ResponseGenerationService>();
         services.AddSingleton<IBackgroundTaskService, BackgroundTaskService>();
+
+        // Agent / tools / security (Phase 4 Stage 2).
+        services.AddSingleton<IToolRegistry>(_ =>
+        {
+            var registry = new ToolRegistry();
+            registry.DiscoverAndRegisterTools();
+            return registry;
+        });
+        services.AddSingleton<ISecurityManager, SecurityManager>();
+        services.AddSingleton<IAgentOrchestrator, AgentOrchestrator>();
 
         services.AddTransient<MainWindowViewModel>();
         services.AddTransient<ChatViewModel>();

@@ -7,7 +7,10 @@ using System.Reactive.Linq;
 using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
 using ReactiveUI;
+using SupportAssistant.Core.Agent;
+using SupportAssistant.Core.Security;
 using SupportAssistant.Core.Services;
+using SupportAssistant.Core.Tools;
 using SupportAssistant.ViewModels;
 using SupportAssistant.Views;
 
@@ -121,6 +124,18 @@ public partial class App : Application
         services.AddSingleton<IContextRetrievalService, ContextRetrievalService>();
         services.AddSingleton<IResponseGenerationService, ResponseGenerationService>();
         services.AddSingleton<IBackgroundTaskService, BackgroundTaskService>();
+
+        // Agent / tools / security (Phase 4 Stage 2). The tool registry auto-discovers concrete
+        // ITool implementations (e.g. ReadFileContents) via reflection. The orchestrator consumes the
+        // RAG services (folded into its prompts) and runs the real SLM when one is registered.
+        services.AddSingleton<IToolRegistry>(sp =>
+        {
+            var registry = new ToolRegistry();
+            registry.DiscoverAndRegisterTools();
+            return registry;
+        });
+        services.AddSingleton<ISecurityManager, SecurityManager>();
+        services.AddSingleton<IAgentOrchestrator, AgentOrchestrator>();
 
         // ViewModels
         services.AddTransient<MainWindowViewModel>();

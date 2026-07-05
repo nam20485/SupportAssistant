@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
@@ -8,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using SupportAssistant.Core.Models;
+using SupportAssistant.Core.Services;
 using SupportAssistant.Core.Tools;
 using SupportAssistant.Core.Security;
 
@@ -20,6 +22,8 @@ namespace SupportAssistant.Core.Agent
     {
         private readonly IToolRegistry _toolRegistry;
         private readonly ISecurityManager _securityManager;
+        private readonly IContextRetrievalService? _contextRetrieval;
+        private readonly IQueryProcessingService? _queryProcessing;
         private ISLMService? _slmService;
 
         // Regex patterns for parsing tool calls from SLM output
@@ -33,10 +37,21 @@ namespace SupportAssistant.Core.Agent
             RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline
         );
 
-        public AgentOrchestrator(IToolRegistry toolRegistry, ISecurityManager securityManager)
+        /// <summary>
+        /// Creates the orchestrator. The RAG services (<paramref name="contextRetrieval"/> and
+        /// <paramref name="queryProcessing"/>) are optional: when supplied, retrieved knowledge-base
+        /// context is folded into the prompts so tool-augmented answers stay grounded (Phase 4 T2.3).
+        /// </summary>
+        public AgentOrchestrator(
+            IToolRegistry toolRegistry,
+            ISecurityManager securityManager,
+            IContextRetrievalService? contextRetrieval = null,
+            IQueryProcessingService? queryProcessing = null)
         {
             _toolRegistry = toolRegistry ?? throw new ArgumentNullException(nameof(toolRegistry));
             _securityManager = securityManager ?? throw new ArgumentNullException(nameof(securityManager));
+            _contextRetrieval = contextRetrieval;
+            _queryProcessing = queryProcessing;
         }
 
         public void RegisterSLMService(ISLMService slmService)
@@ -51,12 +66,32 @@ namespace SupportAssistant.Core.Agent
 
             try
             {
+                // Phase 4 T2.3: ground the agent in retrieved knowledge-base context when the RAG
+                // services are wired. Failures here are non-fatal — the agent continues ungrounded.
+                string? kbContext = null;
+                if (_queryProcessing is not null && _contextRetrieval is not null)
+                {
+                    try
+                    {
+                        var processedQuery = await _queryProcessing.ProcessQueryAsync(query);
+                        var contextResult = await _contextRetrieval.RetrieveContextAsync(processedQuery);
+                        kbContext = FormatKnowledgeBaseContext(contextResult);
+                    }
+                    catch (Exception ex)
+                    {
+                        response.Warnings.Add($"Knowledge-base context retrieval skipped: {ex.Message}");
+                    }
+                }
+
                 // Step 1: Generate initial response with tool descriptions
                 var toolsPrompt = GetAvailableToolsPrompt(userId);
-                var initialPrompt = BuildInitialPrompt(query, toolsPrompt);
-                
-                // This would call the SLM - for now we'll simulate
-                var slmResponse = await SimulateSLMResponseAsync(initialPrompt, cancellationToken);
+                var initialPrompt = BuildInitialPrompt(query, toolsPrompt, kbContext);
+
+                // Use the real SLM when one is registered and available (Stage 1 wires OnnxSLMService);
+                // otherwise fall back to the placeholder simulation.
+                var slmResponse = _slmService is not null && _slmService.IsAvailable
+                    ? await _slmService.GenerateResponseAsync(initialPrompt, cancellationToken)
+                    : await SimulateSLMResponseAsync(initialPrompt, cancellationToken);
 
                 // Step 2: Parse tool calls from the response
                 var toolCalls = ParseToolCalls(slmResponse);
@@ -275,8 +310,13 @@ namespace SupportAssistant.Core.Agent
         public async Task<string> GenerateFollowUpResponseAsync(string originalQuery, List<ToolExecutionResult> toolResults, CancellationToken cancellationToken = default)
         {
             var prompt = BuildFollowUpPrompt(originalQuery, toolResults);
-            
-            // This would call the SLM - for now we'll simulate
+
+            // Use the real SLM when available; otherwise the placeholder simulation.
+            if (_slmService is not null && _slmService.IsAvailable)
+            {
+                return await _slmService.GenerateResponseAsync(prompt, cancellationToken);
+            }
+
             return await SimulateFollowUpResponseAsync(prompt, toolResults, cancellationToken);
         }
 
@@ -409,17 +449,43 @@ namespace SupportAssistant.Core.Agent
             };
         }
 
-        private static string BuildInitialPrompt(string userQuery, string toolsPrompt)
+        private static string BuildInitialPrompt(string userQuery, string toolsPrompt, string? knowledgeBaseContext)
         {
-            return $@"You are an AI assistant with access to system tools. 
+            var contextSection = string.IsNullOrEmpty(knowledgeBaseContext)
+                ? string.Empty
+                : $"\n\n## Relevant Knowledge-Base Context\n\n{knowledgeBaseContext}\n";
 
-{toolsPrompt}
+            return $@"You are an AI assistant with access to system tools. 
+{toolsPrompt}{contextSection}
 
 User Query: {userQuery}
 
 Please analyze the user's query and determine if any tools would be helpful to provide a complete answer. If so, use the appropriate tools and then provide a comprehensive response based on the results.
 
-If you need to use tools, call them first, then provide your analysis and response based on the tool results.";
+If you need to use tools, call them first, then provide your analysis and response based on the tool results. When the knowledge-base context above is relevant, ground your answer in it.";
+        }
+
+        /// <summary>
+        /// Formats the top retrieved knowledge-base documents into a prompt section so the SLM's
+        /// answers (and tool-augmented follow-ups) stay grounded in the user's own files.
+        /// </summary>
+        private static string FormatKnowledgeBaseContext(ContextRetrievalResult contextResult)
+        {
+            if (contextResult is null || !contextResult.HasResults)
+            {
+                return string.Empty;
+            }
+
+            var builder = new StringBuilder();
+            foreach (var doc in contextResult.Documents.Take(3))
+            {
+                builder.AppendLine($"Source: {doc.Document.Source}");
+                builder.AppendLine($"Content: {doc.Document.Content}");
+                builder.AppendLine($"Relevance: {doc.SimilarityScore:P1}");
+                builder.AppendLine();
+            }
+
+            return builder.ToString().TrimEnd();
         }
 
         private static string BuildFollowUpPrompt(string originalQuery, List<ToolExecutionResult> toolResults)
