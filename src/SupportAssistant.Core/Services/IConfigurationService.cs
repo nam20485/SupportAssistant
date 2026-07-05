@@ -36,14 +36,10 @@ public interface IConfigurationService
     string GetEmbeddingTokenizerPath();
 
     /// <summary>
-    /// Gets the path to the generation tokenizer BPE vocab file (Phi-3 <c>vocab.json</c>).
+    /// Gets the path to the generation SentencePiece tokenizer model file (Phi-3
+    /// <c>tokenizer.model</c>). Phi-3 uses a SentencePiece tokenizer, not a BPE vocab/merges pair.
     /// </summary>
-    string GetGenerationTokenizerVocabPath();
-
-    /// <summary>
-    /// Gets the path to the generation tokenizer BPE merges file (Phi-3 <c>merges.txt</c>).
-    /// </summary>
-    string GetGenerationTokenizerMergesPath();
+    string GetGenerationTokenizerModelPath();
 
     /// <summary>
     /// Gets whether to use ONNX embeddings or fallback to simple embeddings
@@ -98,15 +94,10 @@ public class DefaultConfigurationService : IConfigurationService
             Path.Combine(_tokenizersPath, "minilm", "vocab.txt"),
             Path.Combine(_modelsPath, "minilm", "vocab.txt"));
 
-    public string GetGenerationTokenizerVocabPath() =>
+    public string GetGenerationTokenizerModelPath() =>
         ResolveFirst(
-            Path.Combine(_tokenizersPath, "phi3", "vocab.json"),
-            Path.Combine(_modelsPath, "phi3", "vocab.json"));
-
-    public string GetGenerationTokenizerMergesPath() =>
-        ResolveFirst(
-            Path.Combine(_tokenizersPath, "phi3", "merges.txt"),
-            Path.Combine(_modelsPath, "phi3", "merges.txt"));
+            Path.Combine(_tokenizersPath, "phi3", "tokenizer.model"),
+            Path.Combine(_modelsPath, "phi3", "tokenizer.model"));
 
     public bool UseOnnxEmbeddings()
     {
