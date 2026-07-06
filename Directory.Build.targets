@@ -1,0 +1,53 @@
+<Project>
+  <!--
+    linux-x64 native runtime wiring for Microsoft.ML.OnnxRuntime's Windows-style DllImport name.
+
+    On Linux, OnnxRuntime 1.24.x P/Invokes "onnxruntime.dll". .NET's P/Invoke search probes for
+    onnxruntime.dll.so / libonnxruntime.dll.so / onnxruntime.dll / libonnxruntime.dll in the output
+    dir — NOT for libonnxruntime.so (the actual filename the package ships). We create symlinks from
+    the probed names to the shipped .so so the DllImport resolves. (Mirrors InferenceEngine.Core's
+    SymlinkLinuxNativeLibsForPInvoke, which is inline and does not propagate to consumers.)
+
+    CRITICAL — do NOT clobber the MIGraphX-capable libonnxruntime.so. This target previously copied
+    the CPU-only libonnxruntime.so over the output unconditionally — a workaround for the deprecated
+    ROCm EP 1.19.x, which SIGSEGVed in its .init section on hosts lacking the ROCm userspace runtime.
+    That workaround is OBSOLETE and HARMFUL: the MIGraphX-capable lib shipped by
+    InferenceEngine.ROCm.Runtime 1.24.1.36 is safe to load on ALL hosts (BaseInferenceEngine falls
+    back to CPU via managed exceptions when the HIP/MIGraphX runtime is absent), and overwriting it
+    silently disabled MIGraphX GPU inference on linux-x64 RID builds.
+
+    Resolution:
+      - linux-x64 RID builds: InferenceEngine.Core's buildTransitive ForceRocmOnnxRuntimeLibOnLinux
+        target places the MIGraphX lib flat in OutDir. The flat-copy below is guarded by
+        !Exists('$(OutDir)libonnxruntime.so') so it is SKIPPED (previously it overwrote the MIGraphX
+        lib). Only the P/Invoke symlinks are added here.
+      - RIDless builds (dotnet test): ForceRocm does not run, so no flat lib exists; the guarded
+        copy places the CPU lib flat so the symlinks resolve. Tests don't use GPU, so CPU is fine.
+
+    No-op on Windows (native onnxruntime.dll / DirectML) and macOS (CoreML).
+  -->
+  <Target Name="WireOnnxRuntimeNativeLibOnLinux" AfterTargets="Build"
+          Condition="$([MSBuild]::IsOSPlatform('Linux')) And '$(OS)' == 'Unix'">
+    <PropertyGroup>
+      <!-- CPU-only libonnxruntime.so from the base OnnxRuntime package (NuGet package root). Used
+           ONLY as the RIDless fallback; never overwrites the MIGraphX lib. -->
+      <_CpuOrtLibSource>$(NuGetPackageRoot)microsoft.ml.onnxruntime/$(OnnxRuntimeVersion)/runtimes/linux-x64/native/libonnxruntime.so</_CpuOrtLibSource>
+    </PropertyGroup>
+
+    <!-- (1) Place a flat libonnxruntime.so for symlink resolution ONLY when one is not already
+         present. For linux-x64 RID builds ForceRocmOnnxRuntimeLibOnLinux already placed the
+         MIGraphX-capable lib, so this is skipped (it used to overwrite it, breaking GPU). For
+         RIDless builds (dotnet test) it places the CPU lib flat. -->
+    <Copy SourceFiles="$(_CpuOrtLibSource)" DestinationFolder="$(OutDir)"
+          Condition="!Exists('$(OutDir)libonnxruntime.so') And Exists('$(_CpuOrtLibSource)')"
+          SkipUnchangedFiles="true" ContinueOnError="true" />
+
+    <!-- (2) Remove any stray Windows PE native libs so dlopen does not reject them first. -->
+    <Delete Files="$(OutDir)onnxruntime.dll;$(OutDir)ortextensions.dll;$(OutDir)onnxruntime_providers_shared.dll"
+            ContinueOnError="true" />
+
+    <!-- (3) Symlink the P/Invoke-probed names to libonnxruntime.so in OutDir. -->
+    <Exec Command="ln -sf libonnxruntime.so &quot;$(OutDir)onnxruntime.dll&quot;" ContinueOnError="true" />
+    <Exec Command="ln -sf libonnxruntime.so &quot;$(OutDir)libonnxruntime.dll.so&quot;" ContinueOnError="true" />
+  </Target>
+</Project>
