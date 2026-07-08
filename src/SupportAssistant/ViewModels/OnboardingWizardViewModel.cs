@@ -153,7 +153,7 @@ public class OnboardingWizardViewModel : ViewModelBase
 
     #region Available Options
 
-    public List<string> AvailableExecutionProviders { get; } = new() { "CPU", "CUDA", "DirectML" };
+    public List<string> AvailableExecutionProviders { get; } = new() { "DirectML", "CPU", "CUDA", "ROCm" };
 
     #endregion
 

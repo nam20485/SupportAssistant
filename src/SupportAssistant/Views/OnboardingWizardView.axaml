@@ -113,7 +113,7 @@
                     SelectedItem="{Binding SelectedExecutionProvider}" 
                     Width="200" 
                     HorizontalAlignment="Left"/>
-          <TextBlock Text="CPU: Works on all systems (slower), CUDA: NVIDIA GPUs (faster), DirectML: Windows GPUs" 
+          <TextBlock Text="CPU: Works on all systems (slower), CUDA: NVIDIA GPUs (faster), DirectML: Windows GPUs, ROCm: AMD GPUs (Linux)" 
                      FontSize="12" 
                      Foreground="{DynamicResource AppMutedForeground}"/>
         </StackPanel>
