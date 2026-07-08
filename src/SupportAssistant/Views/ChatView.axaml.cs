@@ -30,6 +30,7 @@ public partial class ChatView : UserControl
             // Wire up view model events
             ViewModel.ScrollToBottom += ScrollToBottomImpl;
             ViewModel.CopyToClipboard += CopyToClipboardImpl;
+            ViewModel.FocusInputRequested += FocusInputImpl;
         }
     }
 
@@ -110,6 +111,21 @@ public partial class ChatView : UserControl
         }
     }
 
+    private void FocusInputImpl()
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            try
+            {
+                InputTextBox.Focus();
+            }
+            catch
+            {
+                // Ignore focus errors
+            }
+        }, DispatcherPriority.Background);
+    }
+
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         // Clean up event subscriptions
@@ -117,6 +133,7 @@ public partial class ChatView : UserControl
         {
             ViewModel.ScrollToBottom -= ScrollToBottomImpl;
             ViewModel.CopyToClipboard -= CopyToClipboardImpl;
+            ViewModel.FocusInputRequested -= FocusInputImpl;
         }
         
         base.OnDetachedFromVisualTree(e);

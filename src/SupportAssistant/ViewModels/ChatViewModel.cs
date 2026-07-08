@@ -28,10 +28,12 @@ public partial class ChatViewModel : ViewModelBase
     private bool _isTyping = false;
     private string _processingStage = string.Empty;
     private int _processingProgress = 0;
+    private bool _showExamplePrompts = true;
 
     // Events for UI updates
     public event Action? ScrollToBottom;
     public event Action<string>? CopyToClipboard;
+    public event Action? FocusInputRequested;
 
     /// <summary>
     /// Creates the chat view model. The <paramref name="orchestrator"/> drives the tool-augmented
@@ -75,12 +77,34 @@ public partial class ChatViewModel : ViewModelBase
         CopyMessageCommand = ReactiveCommand.Create<string>(CopyMessage);
         RetryLastMessageCommand = ReactiveCommand.CreateFromTask(RetryLastMessage, canRetryLastMessage);
         CancelProcessingCommand = ReactiveCommand.Create(CancelProcessing, this.WhenAnyValue(x => x.IsProcessing));
+        UseExamplePromptCommand = ReactiveCommand.Create<string>(UseExamplePrompt);
         
         // Keep CanSendMessage property in sync with the observable
         canSendMessage.Subscribe(value => CanSendMessage = value);
+
+        // Compute initial example-prompt visibility (visible while no user/assistant messages exist)
+        RefreshExamplePromptsVisibility();
     }
 
     public ObservableCollection<ChatMessage> Messages { get; }
+
+    /// <summary>
+    /// Default example prompts shown when the chat has no user/assistant conversation yet.
+    /// </summary>
+    public IReadOnlyList<string> ExamplePrompts { get; } = new[]
+    {
+        "How do I change my desktop background?",
+        "How do I take a screenshot?"
+    };
+
+    /// <summary>
+    /// True while only System messages exist (e.g. on launch and after clearing).
+    /// </summary>
+    public bool ShowExamplePrompts
+    {
+        get => _showExamplePrompts;
+        private set => this.RaiseAndSetIfChanged(ref _showExamplePrompts, value);
+    }
 
     public string UserInput
     {
@@ -115,6 +139,11 @@ public partial class ChatViewModel : ViewModelBase
     public ICommand CopyMessageCommand { get; }
     public ICommand RetryLastMessageCommand { get; }
     public ICommand CancelProcessingCommand { get; }
+
+    /// <summary>
+    /// Fills the send box with a clicked example prompt and focuses the input (no auto-send).
+    /// </summary>
+    public ICommand UseExamplePromptCommand { get; }
 
     // New properties for advanced UI
     public bool IsTyping
@@ -385,6 +414,29 @@ public partial class ChatViewModel : ViewModelBase
         {
             ScrollToBottom?.Invoke();
         }
+
+        // Examples are only relevant while no user/assistant conversation exists.
+        RefreshExamplePromptsVisibility();
+    }
+
+    /// <summary>
+    /// Recomputes <see cref="ShowExamplePrompts"/>: visible until a user or assistant message appears.
+    /// </summary>
+    private void RefreshExamplePromptsVisibility()
+    {
+        ShowExamplePrompts = !Messages.Any(m => m.Type == ChatMessageType.User || m.Type == ChatMessageType.Assistant);
+    }
+
+    /// <summary>
+    /// Fills the send box with a clicked example prompt and requests input focus. Does not send.
+    /// </summary>
+    private void UseExamplePrompt(string? prompt)
+    {
+        if (string.IsNullOrWhiteSpace(prompt))
+            return;
+
+        UserInput = prompt;
+        FocusInputRequested?.Invoke();
     }
 
     // Keyboard shortcut handlers

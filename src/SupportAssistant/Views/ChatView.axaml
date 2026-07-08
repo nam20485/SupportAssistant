@@ -73,7 +73,43 @@
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
-        
+
+        <!-- Example Prompts (shown while no user/assistant conversation exists) -->
+        <StackPanel IsVisible="{Binding ShowExamplePrompts}"
+                    HorizontalAlignment="Center"
+                    Margin="0,15,0,5">
+          <TextBlock Text="💡 Click an example to try it:"
+                     FontSize="12"
+                     FontStyle="Italic"
+                     Foreground="{DynamicResource AppMutedForeground}"
+                     HorizontalAlignment="Center"
+                     Margin="0,0,0,8"/>
+          <ItemsControl ItemsSource="{Binding ExamplePrompts}"
+                        HorizontalAlignment="Center">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel HorizontalAlignment="Center"/>
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="x:String">
+                <Button Content="{Binding}"
+                        Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).UseExamplePromptCommand}"
+                        CommandParameter="{Binding}"
+                        Cursor="Hand"
+                        Padding="14,7"
+                        Margin="5"
+                        CornerRadius="14"
+                        Background="{DynamicResource AppSubtleBackground}"
+                        BorderBrush="{DynamicResource AppBorderBrush}"
+                        BorderThickness="1"
+                        Foreground="{DynamicResource AppStrongForeground}"
+                        ToolTip.Tip="Click to use this example"/>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+
         <!-- Typing Indicator -->
         <Border IsVisible="{Binding ShowTypingIndicator}"
                 Margin="5" Padding="10" CornerRadius="8"
