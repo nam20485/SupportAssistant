@@ -19,11 +19,11 @@
       platforms, Microsoft.ML.OnnxRuntime.DirectML on Windows, and
       InferenceEngine.ROCm.Runtime.linux-x64 on linux-x64.
     -->
-    <PackageReference Include="InferenceEngine.Core" Version="1.1.0-dev.18" />
+    <PackageReference Include="InferenceEngine.Core" Version="1.1.29" />
     <!-- Pinned to match InferenceEngine.Core's transitive OnnxRuntime version (1.24.1). -->
-    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="$(OnnxRuntimeVersion)" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.27.0" />
     <!-- Tokenization (Phi-3 + MiniLM tokenizer.json) — stays in our code, the lib is tensor-in/out. -->
-    <PackageReference Include="Microsoft.ML.Tokenizers" Version="1.0.3" />
+    <PackageReference Include="Microsoft.ML.Tokenizers" Version="2.0.0" />
   </ItemGroup>
 
 </Project>
