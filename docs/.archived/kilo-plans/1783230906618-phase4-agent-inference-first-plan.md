@@ -1,3 +1,5 @@
+> **Archived 2026-07-10.** Largely executed; package pins and "dormant Phase 4" premise are stale. See [`docs/plans/STATUS.md`](../../plans/STATUS.md).
+
 # Phase 4 Agent Implementation — Inference-First Critical Path
 
 **Status:** Implementation-ready (planning complete)
@@ -7,7 +9,7 @@
 
 ## 0. What this plan is
 
-A single coherent, end-to-end critical path that turns SupportAssistant from a **simulated** RAG shell into a **real, running, tool-augmented agent**. It supersedes the inference framing of [`STATUS.md`](../../docs/plans/STATUS.md) §4 and reconciles [`PHASE_4_IMPLEMENTATION_PLAN.md`](../../docs/plans/PHASE_4_IMPLEMENTATION_PLAN.md) (which wrongly treats Phase 4.1/4.2 as "complete") with reality: **no real inference runs and the Phase 4 framework is dormant library code, not wired into the app.**
+A single coherent, end-to-end critical path that turns SupportAssistant from a **simulated** RAG shell into a **real, running, tool-augmented agent**. It supersedes the inference framing of [`STATUS.md`](../../docs/plans/STATUS.md) §4 and reconciles [`PHASE_4_IMPLEMENTATION_PLAN.md`](../../docs/.archived/plans/PHASE_4_IMPLEMENTATION_PLAN.md) (which wrongly treats Phase 4.1/4.2 as "complete") with reality: **no real inference runs and the Phase 4 framework is dormant library code, not wired into the app.**
 
 It is **inference-first**, then agent wiring, then minimal tools/approval, then (additive) streaming. The long tail of tools and the audit/permissions UI are explicitly deferred (§9).
 

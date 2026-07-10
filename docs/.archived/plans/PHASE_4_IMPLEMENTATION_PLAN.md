@@ -1,5 +1,8 @@
 # Phase 4: Tooling & Agentic Capabilities Implementation Plan
 
+> **Archived 2026-07-10.** Historical 2025 checklist. Stages 0–3 are implemented; unchecked boxes
+> below are misleading. See [`docs/plans/STATUS.md`](../../plans/STATUS.md).
+
 **Start Date:** July 16, 2025  
 **Target Completion:** 12-16 weeks  
 **Version Target:** v0.2.0-beta

@@ -1,3 +1,5 @@
+> **Historical — superseded by [`docs/plans/STATUS.md`](../plans/STATUS.md).** Do not treat "complete/production-ready" claims as current.
+
 # SupportAssistant Project - Environment Transition Summary
 *Generated: 2025-01-17 09:21:00 UTC*
 
