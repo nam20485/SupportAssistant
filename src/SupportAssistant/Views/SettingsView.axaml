@@ -69,6 +69,18 @@
                        FontSize="12" Foreground="{DynamicResource AppMutedForeground}"/>
           </StackPanel>
 
+          <!-- Acceleration Status (WS1): read-only, shows the provider that actually loaded
+               per engine, plus a fallback notice if a CPU fallback occurred. -->
+          <StackPanel Spacing="5" Margin="0,5,0,0">
+            <TextBlock Text="Acceleration Status" FontWeight="SemiBold"/>
+            <TextBlock Text="{Binding EmbeddingStatus}" FontSize="12"
+                       Foreground="{DynamicResource AppMutedForeground}"/>
+            <TextBlock Text="{Binding GenerationStatus}" FontSize="12"
+                       Foreground="{DynamicResource AppMutedForeground}"/>
+            <TextBlock Text="{Binding FallbackNotice}" IsVisible="{Binding HasFallback}"
+                       FontSize="12" Foreground="Orange" TextWrapping="Wrap"/>
+          </StackPanel>
+
           <StackPanel Spacing="5">
             <TextBlock Text="Max Context Length" FontWeight="SemiBold"/>
             <NumericUpDown Value="{Binding MaxContextLength}" 

@@ -1,12 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive;
+using System.Reactive.Concurrency;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using ReactiveUI;
 using SupportAssistant.Core.Models;
 using SupportAssistant.Core.Services;
-using System.Reactive;
 
 namespace SupportAssistant.ViewModels;
 
@@ -16,14 +17,21 @@ namespace SupportAssistant.ViewModels;
 public class SettingsViewModel : ViewModelBase
 {
     private readonly ISettingsService _settingsService;
+    private readonly IInferenceDiagnosticsService _diag;
     private ApplicationSettings _settings;
     private string _statusMessage = string.Empty;
 
-    public SettingsViewModel(ISettingsService settingsService)
+    public SettingsViewModel(ISettingsService settingsService, IInferenceDiagnosticsService diagnostics)
     {
         _settingsService = settingsService;
+        _diag = diagnostics;
         _settings = _settingsService.Settings;
-        
+
+        // Refresh the acceleration-status block whenever either engine reports a load/fallback.
+        // The callback fires on a thread-pool thread, so marshal to the UI thread.
+        _diag.Updated += OnDiagUpdated;
+        RefreshDiagnostics();
+
         // Commands
         SaveCommand = ReactiveCommand.CreateFromTask(SaveAsync);
         ResetCommand = ReactiveCommand.CreateFromTask(ResetAsync);
@@ -51,6 +59,56 @@ public class SettingsViewModel : ViewModelBase
     {
         get => _statusMessage;
         set => this.RaiseAndSetIfChanged(ref _statusMessage, value);
+    }
+
+    // Acceleration Status (WS1): read-only, UI-thread-marshaled properties refreshed from the
+    // inference diagnostics service. Show the *real* provider + CPU-fallback reason, with a
+    // "loading…" state until the engine's OnSessionInitialized fires (lazy, on first inference).
+    private string _embeddingStatus = "Embedding: loading…";
+    public string EmbeddingStatus
+    {
+        get => _embeddingStatus;
+        set => this.RaiseAndSetIfChanged(ref _embeddingStatus, value);
+    }
+
+    private string _generationStatus = "Generation: loading…";
+    public string GenerationStatus
+    {
+        get => _generationStatus;
+        set => this.RaiseAndSetIfChanged(ref _generationStatus, value);
+    }
+
+    private string _fallbackNotice = string.Empty;
+    public string FallbackNotice
+    {
+        get => _fallbackNotice;
+        set => this.RaiseAndSetIfChanged(ref _fallbackNotice, value);
+    }
+
+    private bool _hasFallback;
+    public bool HasFallback
+    {
+        get => _hasFallback;
+        set => this.RaiseAndSetIfChanged(ref _hasFallback, value);
+    }
+
+    private void OnDiagUpdated(object? sender, EventArgs e) =>
+        RxApp.MainThreadScheduler.Schedule(RefreshDiagnostics);
+
+    private void RefreshDiagnostics()
+    {
+        var em = _diag.Embedding;
+        var ge = _diag.Generation;
+
+        EmbeddingStatus = em.IsLoaded ? $"Embedding: {em.Provider}" : "Embedding: loading…";
+        GenerationStatus = ge.IsLoaded ? $"Generation: {ge.Provider}" : "Generation: loading…";
+
+        var fb = new[] { em, ge }
+            .Where(x => x.IsFallback)
+            .Select(x => $"{x.EngineKind} fell back to CPU — {x.FallbackReason}")
+            .ToList();
+        FallbackNotice = string.Join("\n", fb);
+        HasFallback = fb.Any();
     }
 
     // General Settings
