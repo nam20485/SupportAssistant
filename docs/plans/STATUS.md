@@ -1,13 +1,14 @@
 # SupportAssistant — Current Project Status
 
-**Last verified:** 2026-07-05 (against current source tree on `development`)
-**Head commit:** `b758191` — "Merge pull request #7 from nam20485/dev/inference-first"
-**Branch state:** `dev/inference-first` was merged into `development` via PR #7. `development` is **62 commits ahead of `master`**; the `development → master` merge is the outstanding integration step.
+**Last verified:** 2026-07-10 (against `feat/inference-diagnostics` / WS1 work; Stages 0–3 on `development`)
+**Head note:** WS1 (inference diagnostics) implemented on PR [#10](https://github.com/nam20485/SupportAssistant/pull/10). Stages 0–3 remain on `development`.
+**Branch state:** `development` is ahead of `master` (default/publish branch); the `development → master` merge is still outstanding. Count drifts — re-check with `git rev-list --count master..development`.
 
-> This document supersedes the historical status reports in [`docs/.archived/`](./.archived/),
+> This document supersedes the historical status reports in [`docs/.archived/`](../.archived/),
 > several of which contained **overstated or false "complete" claims**. This file reflects what the
 > source code actually does, verified by reading it. The 2026-07-03 snapshot (simulated inference,
-> dormant Phase 4) is **superseded**: Stages 0–3 of the inference-first plan are now implemented.
+> dormant Phase 4) is **superseded**: Stages 0–3 of the inference-first plan are implemented.
+> The 2026-07-05 "Stage 4 blocked on H3" note is also **superseded** (see §3.A).
 
 ---
 
@@ -50,32 +51,35 @@ The 2026-07-03 STATUS flagged these as false/misleading; they are now backed by 
 
 ## 3. What is NOT done yet
 
-### A. Stage 4 — Streaming (UI) — BLOCKED on an upstream library fix
+### A. Stage 4 — Streaming (UI) — unblocked (consumer-only)
 - `OnnxSLMService` already calls `TextGenerationEngine.PredictStreamingAsync` but **buffers it to a one-shot string**; `ChatViewModel` renders the full response (no live token streaming). The `EnableStreaming` settings flag exists but is not consumed end-to-end.
-- **Blocking dependency:** `InferenceEngine.Core`'s `TextGenerationEngine` has a decode-delta defect (library review finding **H3**) that corrupts/drops/duplicates streamed text. Stage 4 must wait until that fix ships upstream **and** SupportAssistant bumps the `InferenceEngine.Core` package ref. (The one-shot generation path already inherits H3 today.)
-- Remaining work (post-unblock): expose `ISLMService.StreamResponseAsync`, make `ChatViewModel` consume the stream token-by-token (with one-shot fallback), add parity/cancellation tests.
+- **Upstream H3 decode-delta** (which previously blocked Stage 4) is **fixed** in `InferenceEngine.Core` **1.1.29** (see [`inference-engine-integration-status.md`](./inference-engine-integration-status.md) §B/G). Remaining work is SupportAssistant-only: expose `ISLMService.StreamResponseAsync`, make `ChatViewModel` consume tokens (with one-shot fallback), add parity/cancellation tests.
 
 ### B. Merge `development → master`
-- 62 commits of Stage 0–3 work are on `development` but **not on `master`** (the default/publish branch, `origin/HEAD`). Open the `development → master` PR.
+- Stage 0–3 work is on `development` but **not on `master`** (the default/publish branch, `origin/HEAD`). Open the `development → master` PR when ready.
 
 ### C. Minor leftovers
-- `IOnnxRuntimeService` is still registered in DI (`App.axaml.cs:112`) although Stage 1 routes inference through the library; the plan's T1.8 called for removing it.
-- `ToolRegistry.RegisterCoreTools()` body is still fully commented (`ToolRegistry.cs:261-268`); registration is done via `DiscoverAndRegisterTools()` instead. Cosmetic — pick one mechanism.
+- `IOnnxRuntimeService` is still registered in DI (`App.axaml.cs`) although Stage 1 routes inference through the library; the plan's T1.8 called for removing it.
+- `ToolRegistry.RegisterCoreTools()` body is still fully commented; registration is done via `DiscoverAndRegisterTools()` instead. Cosmetic — pick one mechanism.
 
 ### D. Deferred (plan §9 — separate plans, not blocking)
 - More tools: `CreateDirectory`/`DeleteFile`, INI/Registry/Environment, `GetRunningProcesses`/`GetNetworkConfiguration`/`GetEventLogEntries`, network diagnostics (`PingHost`/`TraceRoute`/`DNSLookup`/`PortScan`), system monitoring.
 - Audit-trail viewer UI + permissions-management UI (Phase 4.4/4.6).
 - Penetration / security-hardening pass, execution sandboxing, system restore points.
 
+### E. Done recently — WS1 diagnostics
+- `IInferenceDiagnosticsService` / `EngineDiagnostics`, `OnSessionInitialized` wiring, and Settings UI surfacing of provider + fallback (PR #10). Details:
+  [`inference-engine-integration-status.md`](./inference-engine-integration-status.md) §D,
+  [`ws1-inference-diagnostics-development-plan.md`](./ws1-inference-diagnostics-development-plan.md).
+
 ---
 
 ## 4. Cross-repository dependency
 
 SupportAssistant **consumes** `InferenceEngine.Core` (`intel-agency/inference-engine-lib`) as a NuGet
-package. The library's post-review fix plan lives at
-[`docs/review-fix-plan.md` in that repo](https://github.com/intel-agency/inference-engine-lib/blob/development/docs/review-fix-plan.md)
-(Phase 1: concurrency, timeouts, decode-delta, disposal). **Bump the package ref here once those
-fixes are published** before finishing Stage 4.
+package from the private GitHub Packages feed (`nuget.config` + `NUGET_AUTH_TOKEN`). Library review
+fixes (including H3) are in the **1.1.29** package currently referenced. Further bumps follow
+upstream releases as needed for Stage 4 polish.
 
 ---
 
@@ -83,18 +87,20 @@ fixes are published** before finishing Stage 4.
 
 | Need | Document |
 |------|----------|
-| Active staged plan (Stages 0–4) | [`.kilo/plans/1783230906618-phase4-agent-inference-first-plan.md`](../../.kilo/plans/1783230906618-phase4-agent-inference-first-plan.md) |
-| Inference refactor detail | [`docs/plans/inference-engine-refactor-plan.md`](./inference-engine-refactor-plan.md) |
-| Streaming contract (Stage 4 target) | [`docs/plans/inference-engine-streaming-upstream-spec.md`](./inference-engine-streaming-upstream-spec.md) |
-| Overall app spec & requirements | `issue_description.md` (root) |
+| Active remaining workstreams | [`inference-integration-implementation-plan.md`](./inference-integration-implementation-plan.md) |
+| Inference integration (committed vs remaining) | [`inference-engine-integration-status.md`](./inference-engine-integration-status.md) |
+| Historical inference refactor plan | [`inference-engine-refactor-plan.md`](./inference-engine-refactor-plan.md) (partially superseded — see banner) |
+| Streaming contract (Stage 4 target) | [`inference-engine-streaming-upstream-spec.md`](./inference-engine-streaming-upstream-spec.md) |
+| Overall app spec & requirements | [`docs/ai-new-app-template.md`](../ai-new-app-template.md) |
+| Contributor / agent guide | [`AGENTS.md`](../../AGENTS.md) |
 | DI wiring (what's running) | `src/SupportAssistant/App.axaml.cs` (`ConfigureServices`) |
 | Chat flow | `src/SupportAssistant/ViewModels/ChatViewModel.cs` |
 | Inference engines | `src/SupportAssistant.Core/Engines/`, `Agent/OnnxSLMService.cs` |
 | Tool/Agent/Security code | `src/SupportAssistant.Core/Tools/`, `Agent/`, `Security/` |
 
-### Archived (historical status snapshots — read with skepticism)
-`docs/.archived/` holds prior status docs whose "complete/production-ready" assertions about SLM
-integration were **not** backed by code at the time. Kept for history only.
+### Archived (historical — read with skepticism)
+`docs/.archived/` holds prior status docs and web-app instruction modules. Kept for history only.
+Original Phase 4 checklist: [`docs/.archived/plans/PHASE_4_IMPLEMENTATION_PLAN.md`](../.archived/plans/PHASE_4_IMPLEMENTATION_PLAN.md).
 
 ---
 
@@ -102,8 +108,6 @@ integration were **not** backed by code at the time. Kept for history only.
 
 - **Actually running today:** a tool-augmented agent over **real** MiniLM embeddings + **real** Phi-3
   generation (via `InferenceEngine.Core`), with real Human-in-the-Loop approval and backup/restore —
-  all wired into the chat path (Stages 0–3).
-- **Known quality gap:** generation (one-shot today, streaming later) inherits the library's H3
-  decode-delta defect until the upstream fix + a package bump land.
-- **Next steps:** (B) merge `development → master`; (A) finish Stage 4 streaming after the library
-  fix + package bump; (D) the deferred tools/UI/hardening tail.
+  all wired into the chat path (Stages 0–3), plus **WS1** inference diagnostics in Settings.
+- **Next steps:** (B) merge `development → master`; (A) finish Stage 4 streaming (unblocked);
+  (C) minor DI/tool-registration cleanups; (D) deferred tools/UI/hardening tail.

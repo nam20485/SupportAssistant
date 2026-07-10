@@ -11,7 +11,9 @@ SupportAssistant supports multiple distribution formats:
 
 ## Prerequisites
 
-- **.NET 9.0 SDK** or later
+- **.NET 10 SDK** (see `global.json`; projects target `net10.0`)
+- **`NUGET_AUTH_TOKEN`** — GitHub PAT with `read:packages` for the private `intel-agency` feed
+  (`InferenceEngine.Core`). Required for `dotnet restore` (see `nuget.config`).
 - **Windows 10/11** (for MSIX packaging)
 - **PowerShell 5.1** or **PowerShell Core 7+** (for advanced build scripts)
 
@@ -116,7 +118,7 @@ dotnet publish src/SupportAssistant/SupportAssistant.csproj \
 - No dependencies required
 - Single file deployment
 - Optimized for performance (ReadyToRun)
-- Trimmed to reduce size
+- Trimming is **disabled** (`PublishTrimmed=false`) for ReactiveUI compatibility
 
 ### 2. Portable ZIP Package
 
@@ -149,37 +151,37 @@ dotnet publish src/SupportAssistant/SupportAssistant.csproj \
 
 ## Build Optimization
 
-The build process includes several optimizations:
-
-### Code Trimming
-- **PublishTrimmed**: Removes unused code to reduce size
-- **TrimMode**: `partial` for compatibility with reflection-heavy libraries
-- **TrimmerRootAssembly**: Preserves essential assemblies (ONNX Runtime, Avalonia)
+### Trimming (disabled)
+- **`PublishTrimmed=false`** — required for ReactiveUI / Avalonia.ReactiveUI compatibility.
+  Do not enable trimming for Release publishes.
 
 ### Ahead-of-Time Compilation
 - **PublishReadyToRun**: Pre-compiles for faster startup
-- **TieredCompilation**: Optimizes hot paths during runtime
+- **TieredCompilation**: Optimizes hot paths during runtime (`Directory.Build.props`)
 
 ### Single File Deployment
-- **PublishSingleFile**: Bundles everything into one executable
+- **PublishSingleFile**: Bundles into one executable (Release / publish)
 - **IncludeNativeLibrariesForSelfExtract**: Includes ONNX Runtime native libraries
 
 ## Dependencies
 
-The application bundles the following key dependencies:
+Versions below match the project files at time of writing; prefer the `.csproj` /
+`Directory.Build.props` pins if they diverge.
 
 ### Core Framework
-- **.NET 9.0 Runtime** (self-contained)
-- **Avalonia UI 11.3.2** (cross-platform UI)
-- **ReactiveUI 20.4.1** (MVVM framework)
+- **.NET 10** runtime (self-contained publish)
+- **Avalonia UI 11.3.18**
+- **ReactiveUI 20.4.1** (pinned for Avalonia.ReactiveUI compatibility)
 
 ### AI and Machine Learning
-- **Microsoft.ML.OnnxRuntime 1.19.2** (AI inference)
-- **Microsoft.ML.OnnxRuntime.DirectML 1.19.2** (GPU acceleration)
+- **InferenceEngine.Core 1.1.29** (private GitHub Packages feed)
+- **Microsoft.ML.OnnxRuntime** (see `OnnxRuntimeVersion` in `Directory.Build.props`; DirectML /
+  ROCm come transitively via InferenceEngine on the relevant RIDs)
+- **Microsoft.ML.Tokenizers 2.0.0**
 
 ### Utilities
-- **CommunityToolkit.Mvvm 8.2.1** (MVVM helpers)
-- **Microsoft.Extensions.DependencyInjection 9.0.7** (dependency injection)
+- **CommunityToolkit.Mvvm 8.4.2**
+- **Microsoft.Extensions.DependencyInjection 10.0.9**
 
 ## File Structure
 
@@ -234,35 +236,28 @@ To trigger a release build:
 
 ### Common Issues
 
-**Build fails with trimming warnings**:
-- Add problematic assemblies to `TrimmerRootAssembly` in the project file
+**Restore fails on InferenceEngine.Core**:
+- Set `NUGET_AUTH_TOKEN` to a GitHub PAT with `read:packages` for the `intel-agency` org
+- The default CI `GITHUB_TOKEN` cannot read that feed (different owner)
 
 **MSIX packaging fails**:
 - Ensure Windows App SDK is installed
 - Verify the Package.appxmanifest is valid
 - Check that all required capabilities are declared
+- Full MSIX still requires a Windows TFM + signing; CI treats MSIX as best-effort
 
 **Large file size**:
-- Enable trimming: `PublishTrimmed=true`
-- Use partial trim mode for compatibility
-- Consider framework-dependent deployment for smaller size
-
-**Runtime errors with trimmed build**:
-- Add problematic types to `TrimmerRootAssembly`
-- Use `DynamicallyAccessedMembers` attributes in code
-- Test thoroughly with trimmed builds
+- Do **not** enable `PublishTrimmed` (breaks ReactiveUI)
+- Consider framework-dependent deployment only for internal/dev builds
 
 ### Performance Optimization
 
 **Startup time**:
-- Use `PublishReadyToRun=true` for AOT compilation
-- Enable `TieredCompilation` for runtime optimization
-- Consider assembly pre-loading for critical dependencies
+- Use `PublishReadyToRun=true` for ReadyToRun compilation
+- Tiered compilation is enabled in `Directory.Build.props`
 
 **Memory usage**:
-- Enable `PublishTrimmed` to remove unused code
-- Use `TrimMode=partial` for better compatibility
-- Profile memory usage and optimize hot paths
+- Profile hot paths; trimming is not an option while ReactiveUI is in use
 
 ## Security Considerations
 

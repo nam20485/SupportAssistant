@@ -33,7 +33,7 @@ Status legend: ⬜ not started · 🟡 in progress · ✅ merged · ⏸️ block
 
 | # | Workstream | Status | Priority | Depends on | Approx. size |
 |---|---|---|---|---|---|
-| **WS1** | Surface inference diagnostics | 🟡 in progress (PR #10) | High | — | Small–Medium |
+| **WS1** | Surface inference diagnostics | ✅ implemented (PR #10) | High | — | Small–Medium |
 | **WS2** | Stage 4 — live streaming to the UI | ⬜ not started | High | WS1 | Medium |
 | **WS3** | Minor cleanups (vestigial DI, tool registration) | ⬜ not started | Medium | WS1 | Small |
 | **WS4** | Deferred tail (more tools, audit/permissions UI, hardening) | ⏸️ backlog | Low | — | Large / ongoing |
@@ -268,7 +268,8 @@ is consumer-only.
 
 ## 5. WS4 — Deferred tail (Low / ongoing backlog)
 
-Not detailed here; tracked as backlog. Grouped for awareness (from `issue_description.md` plan §9):
+Not detailed here; tracked as backlog. Grouped for awareness (from the original app spec /
+[`docs/ai-new-app-template.md`](../ai-new-app-template.md) deferred capabilities):
 
 - **More tools:** `CreateDirectory`/`DeleteFile`, INI/Registry/Environment, `GetRunningProcesses`,
   network diagnostics (`PingHost`/`TraceRoute`/`DNSLookup`/`PortScan`), system monitoring. Each is a

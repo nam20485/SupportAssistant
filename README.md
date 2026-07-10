@@ -6,6 +6,10 @@ and can safely act on your system through user-approved, audited tools.
 
 > **Status:** early development. The inference, agent, and tooling subsystems are under active
 > construction — see [`docs/plans/`](./docs/plans/) for the roadmap.
+>
+> **Contributors / agents:** build, test, and layout conventions are in [`AGENTS.md`](./AGENTS.md).
+> Restore requires a GitHub PAT in `NUGET_AUTH_TOKEN` (`read:packages`) for the private
+> `InferenceEngine.Core` feed — see `nuget.config`.
 
 ## Features
 
