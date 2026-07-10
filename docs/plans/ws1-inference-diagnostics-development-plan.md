@@ -1,9 +1,9 @@
 # WS1 Development Plan — Surface Inference Diagnostics
 
-**Status:** Implemented — awaiting PR merge
+**Status:** Implemented — PR #10 open against `development`
 **Date:** 2026-07-08 (implemented 2026-07-10)
 **Base branch:** `development` (branched off `daa6a95`; plan originally authored at `892a34c`)
-**Feature branch:** `feat/inference-diagnostics`
+**Feature branch:** `feat/inference-diagnostics` → PR [#10](https://github.com/nam20485/SupportAssistant/pull/10)
 **Target PR base:** `development`
 **Parent plans:** [`inference-integration-implementation-plan.md`](./inference-integration-implementation-plan.md) §2 (WS1); status: [`inference-engine-integration-status.md`](./inference-engine-integration-status.md) §D
 
@@ -409,7 +409,7 @@ Purely additive — no removals. The `BackgroundTaskService` DirectML-probe refa
 - [x] Branch `feat/inference-diagnostics` off latest `development`.
 - [x] T1.1–T1.5 implemented; new tests added and passing.
 - [x] `dotnet build` clean (0 warnings); `dotnet test` green (176 passed).
-- [ ] PR opened against `development` with the body above; CI green.
+- [x] PR opened against `development` with the body above — PR [#10](https://github.com/nam20485/SupportAssistant/pull/10); CI pending.
 - [x] No behavioral change to inference; no removals (those are WS3).
 - [x] `rg 'OnSessionInitialized' src/SupportAssistant.Core src/SupportAssistant` returns real wiring
       (`InferenceOptionsFactory.cs:55`).

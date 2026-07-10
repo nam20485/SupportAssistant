@@ -33,7 +33,7 @@ Status legend: ⬜ not started · 🟡 in progress · ✅ merged · ⏸️ block
 
 | # | Workstream | Status | Priority | Depends on | Approx. size |
 |---|---|---|---|---|---|
-| **WS1** | Surface inference diagnostics | 🟡 in progress (PR open) | High | — | Small–Medium |
+| **WS1** | Surface inference diagnostics | 🟡 in progress (PR #10) | High | — | Small–Medium |
 | **WS2** | Stage 4 — live streaming to the UI | ⬜ not started | High | WS1 | Medium |
 | **WS3** | Minor cleanups (vestigial DI, tool registration) | ⬜ not started | Medium | WS1 | Small |
 | **WS4** | Deferred tail (more tools, audit/permissions UI, hardening) | ⏸️ backlog | Low | — | Large / ongoing |
@@ -52,7 +52,7 @@ prepend a dated entry here (include the PR # and key commits).
 
 - **2026-07-10** — WS1 (Surface inference diagnostics) implemented. Branch
   `feat/inference-diagnostics` (4 commits: `8a986d5`, `5316af0`, `e697087`, `ca3b851`) off
-  `development` (`daa6a95`). Shipped `EngineDiagnostics` DTO + `IInferenceDiagnosticsService`
+  `development` (`daa6a95`); PR [#10](https://github.com/nam20485/SupportAssistant/pull/10) opened. Shipped `EngineDiagnostics` DTO + `IInferenceDiagnosticsService`
   (Core), wired `OnSessionInitialized` into both engines via `InferenceOptionsFactory.Create`,
   registered the service in DI, and surfaced a read-only "Acceleration Status" block in Settings
   (provider per engine + CPU-fallback notice, UI-thread-marshaled). `dotnet build` 0 warnings,
@@ -138,8 +138,8 @@ using the library's `InferenceEngineInfo` (`Provider`, `IsFallback`, `FallbackRe
   populated at startup.
 
 ### 2.4 Implementation Notes (filled 2026-07-10)
-- **PR:** `feat/inference-diagnostics` → `development`. Key commits: `8a986d5` (DTO+service),
-  `5316af0` (wire + DI), `e697087` (Settings UI), `ca3b851` (tests).
+- **PR:** `feat/inference-diagnostics` → `development`, PR [#10](https://github.com/nam20485/SupportAssistant/pull/10).
+  Key commits: `8a986d5` (DTO+service), `5316af0` (wire + DI), `e697087` (Settings UI), `ca3b851` (tests).
 - **Deviation from plan (interface shape).** The ws-plan ships a **non-nullable**
   `EngineDiagnostics Embedding/Generation` with an `IsLoaded` flag (default `false` until the first
   `Report`), instead of the nullable `EngineDiagnostics?` sketched in §2.1 above. This is cleaner
