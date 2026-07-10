@@ -24,6 +24,10 @@ public class MainWindowViewModelResolutionTests
         services.AddSingleton<IOnnxRuntimeService, OnnxRuntimeService>();
         services.AddSingleton<IConfigurationService, DefaultConfigurationService>();
 
+        // Inference diagnostics (WS1) — mirrors App.ConfigureServices.
+        services.AddSingleton<InferenceDiagnosticsService>();
+        services.AddSingleton<IInferenceDiagnosticsService>(sp => sp.GetRequiredService<InferenceDiagnosticsService>());
+
         // Inference engines + adapters (Phase 4 Stage 1) — mirrors App.ConfigureServices.
         services.AddSingleton<TextEmbeddingEngine>(_ =>
             new TextEmbeddingEngine(new InferenceEngine.Core.InferenceEngineOptions()));
