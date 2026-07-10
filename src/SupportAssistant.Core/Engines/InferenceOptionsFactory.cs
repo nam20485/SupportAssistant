@@ -17,9 +17,18 @@ namespace SupportAssistant.Core.Engines
     {
         /// <summary>
         /// Creates base options. Hardware acceleration is enabled unless the settings explicitly
-        /// select the CPU provider.
+        /// select the CPU provider. When <paramref name="diagnostics"/> is the concrete
+        /// <see cref="InferenceDiagnosticsService"/>, the library's
+        /// <see cref="InferenceEngineOptions.OnSessionInitialized"/> callback is attached so the
+        /// resolved provider + fallback trail is surfaced to the UI.
         /// </summary>
-        public static InferenceEngineOptions Create(ISettingsService? settings)
+        /// <param name="settings">Application settings (null tolerates settings-free construction).</param>
+        /// <param name="diagnostics">Diagnostics sink (null = no callback attached).</param>
+        /// <param name="engineKind">"Embedding" or "Generation" — labels the published snapshot.</param>
+        public static InferenceEngineOptions Create(
+            ISettingsService? settings,
+            IInferenceDiagnosticsService? diagnostics = null,
+            string engineKind = "Generation")
         {
             var useGpu = true;
             if (settings != null)
@@ -31,12 +40,22 @@ namespace SupportAssistant.Core.Engines
                 }
             }
 
-            return new InferenceEngineOptions
+            var options = new InferenceEngineOptions
             {
                 UseGpuAcceleration = useGpu,
                 DeviceId = 0,
                 WarmupOnLoad = true
             };
+
+            // The callback fires once, on a thread-pool thread, after the session is built
+            // (including fallback). Report() is thread-safe and marshals nothing itself; the
+            // UI consumer of IInferenceDiagnosticsService.Updated is responsible for UI-thread marshaling.
+            if (diagnostics is InferenceDiagnosticsService svc)
+            {
+                options.OnSessionInitialized = info => svc.Report(engineKind, info);
+            }
+
+            return options;
         }
 
         /// <summary>

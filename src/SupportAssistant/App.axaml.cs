@@ -112,18 +112,27 @@ public partial class App : Application
         services.AddSingleton<IOnnxRuntimeService, OnnxRuntimeService>();
         services.AddSingleton<IConfigurationService, DefaultConfigurationService>();
 
+        // Inference diagnostics (WS1): a library-decoupled snapshot store fed by the engines'
+        // OnSessionInitialized callback. Registered before the engine factories so the factories
+        // can resolve it.
+        services.AddSingleton<InferenceDiagnosticsService>();
+        services.AddSingleton<IInferenceDiagnosticsService>(sp => sp.GetRequiredService<InferenceDiagnosticsService>());
+
         // Inference engines (Phase 4 Stage 1). The library fetches models + tokenizer assets lazily
-        // on first use; options are derived from the user's GPU/execution-provider setting.
+        // on first use; options are derived from the user's GPU/execution-provider setting. The
+        // diagnostics service is attached so the resolved provider + fallback trail is surfaced.
         services.AddSingleton(sp =>
         {
             var settings = sp.GetRequiredService<ISettingsService>();
-            var options = InferenceOptionsFactory.Create(settings);
+            var diag = sp.GetRequiredService<InferenceDiagnosticsService>();
+            var options = InferenceOptionsFactory.Create(settings, diag, engineKind: "Embedding");
             return new TextEmbeddingEngine(options);
         });
         services.AddSingleton(sp =>
         {
             var settings = sp.GetRequiredService<ISettingsService>();
-            var options = InferenceOptionsFactory.Create(settings);
+            var diag = sp.GetRequiredService<InferenceDiagnosticsService>();
+            var options = InferenceOptionsFactory.Create(settings, diag, engineKind: "Generation");
             return new TextGenerationEngine(options);
         });
 
