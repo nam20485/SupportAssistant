@@ -282,21 +282,40 @@ When a tool is picked up, follow the existing pattern: implement `ITool`, set `R
 
 ---
 
-## 6. WS5 — Out-of-process engine (Low / **conditional**)
+## 6. WS5 — Out-of-process engine (Low / **conditional**) — **⚠ priority re-check: collision reproduced live, interim CPU-forcing shipped**
 
-**Gated on a product decision to support Linux/ROCm.** Today SupportAssistant is Windows-only
-(`RuntimeIdentifiers = win-x64;win-arm64`), where DirectML is in-process and the ROCm/Mesa↔comgr LLVM
-collision cannot occur — so this is **not** needed now. Do **not** implement unless Linux/ROCm is added.
+**Originally gated on "a product decision to support Linux/ROCm."** That gate was written when Linux was
+purely a future target. It is not: SupportAssistant is actively developed/run on a Linux/AMD RDNA2 dev
+host, and the exact Mesa↔comgr LLVM collision this workstream exists to fix was **reproduced live on
+2026-07-10** (see [`inference-engine-integration-status.md` §C](./inference-engine-integration-status.md#c-out-of-process-engine--not-used-intentional--opt-in--collision-reproduced-2026-07-10-interim-mitigation-shipped-same-day)
+for the log signature and the full mitigation writeup). The same day, an interim fix landed in
+`InferenceOptionsFactory.Create` (`allowGpuInProcess` param, default `false`) that unconditionally
+forces CPU for every in-process caller on Linux — chat send, KB indexing, and the Settings probe are
+all safe now, but **only because GPU acceleration is currently disabled in the GUI on Linux entirely**,
+which is a real functional trade-off, not a targeted fix. Re-prioritize above Low: WS5 is now the only
+path back to GPU-accelerated inference on this platform, not just a crash fix.
+
+**Acceptance criteria once implemented** (in addition to the existing DoD in §8):
+- `InferenceOptionsFactory.Create`'s Linux CPU-forcing branch is removed, or its default flips to
+  `true` for the new worker-routed construction path — GPU acceleration works again on Linux via the
+  worker, without reproducing `LLVM ERROR: inconsistency in registered CommandLine options`.
+- `InferenceOptionsFactory.LastForcedCpuForGuiSafety` no longer fires for the worker-routed path, and
+  `SettingsViewModel.HostPreflightSummary`'s CPU-forced note goes away accordingly.
+- `rg 'WS5:' src/` (the marker left at every touch point below) has zero remaining hits that aren't
+  inside the new OOP wiring itself.
 
 If/when gated-in, the work is:
 - Add a `--worker inference` branch in `Program.cs` calling `InferenceWorkerHost.RunAsync(factory)`
-  ([`Program.cs:14-28`](../../src/SupportAssistant/Program.cs)).
+  ([`Program.cs:14-28`](../../src/SupportAssistant/Program.cs), tagged `WS5:`).
 - Add a `NeedsOutOfProcess()` opt-in guard (Linux + `libamdhip64.so.7` present) and an
   `OutOfProcessBaseInferenceEngine` subclass; choose `OutOfProcessEngineOptions`
-  (`WorkerExecutablePath`, `EngineId`, `WorkerEnvironment`, `EngineOptions`, timeouts).
+  (`WorkerExecutablePath`, `EngineId`, `WorkerEnvironment`, `EngineOptions`, timeouts). The engine
+  construction site to redirect is `App.axaml.cs`'s `ConfigureServices` (tagged `WS5:`).
 - Default `SystemTextJsonWorkerSerializer` is adequate for the `string`↔`string` text engines.
 - Diagnostics mirror automatically (the host proxy copies the worker's `EngineInfo`), so WS1 keeps
   working unchanged in OOP mode.
+- Remove (or bypass for worker-routed construction) the interim `allowGpuInProcess` CPU-forcing —
+  see `InferenceOptionsFactory.cs` and the acceptance criteria above.
 
 ---
 

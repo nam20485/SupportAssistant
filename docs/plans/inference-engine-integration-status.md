@@ -82,25 +82,62 @@ decode-delta** defect (streamed chunks could be wrong/duplicated/dropped). That 
 
 ---
 
-## C. Out-of-process engine — ❌ NOT USED (intentional / opt-in)
+## C. Out-of-process engine — ❌ NOT USED (intentional / opt-in) — **⚠ collision reproduced 2026-07-10, interim mitigation shipped same day**
 
 The library's escape hatch for the Linux/ROCm Mesa↔comgr LLVM collision is fully present
 (`OutOfProcessBaseInferenceEngine`, `OutOfProcessEngineOptions`, `Worker/InferenceWorkerHost`,
-`Worker/WorkerProtocol`), but SupportAssistant does **not** consume it.
+`Worker/WorkerProtocol`), but SupportAssistant does **not** consume it — an app-side CPU-forcing
+mitigation (below) closes the crash risk instead, until the real out-of-process worker lands.
 
 **Evidence:** `rg 'OutOfProcess|InferenceWorkerHost|WorkerExecutable' src/` → no matches. `Program.cs`
-has no `--worker` branch ([`Program.cs:14-28`](../../src/SupportAssistant/Program.cs)).
+has no `--worker` branch ([`Program.cs:14-28`](../../src/SupportAssistant/Program.cs)). Every in-process
+touch point is tagged `WS5:` in source — `rg 'WS5:' src/` is now the up-to-date evidence command.
 
-**Why this is fine for now:** SupportAssistant targets **Windows only**
-(`RuntimeIdentifiers = win-x64;win-arm64`, [`SupportAssistant.csproj:22`](../../src/SupportAssistant/SupportAssistant.csproj)),
-where DirectML is in-process and the ROCm/GL collision cannot occur. The upstream guide itself marks
-the out-of-process path as opt-in ("only route through the worker when the collision is actually
-possible").
+**Correction — this is no longer purely theoretical.** The "Windows only" premise below describes the
+*shipping RID list*, not the *dev host*: SupportAssistant is actively run on a Linux/AMD RDNA2 dev host
+(`linux-x64`, `HSA_OVERRIDE_GFX_VERSION=10.3.0`), and the predicted collision was reproduced live in the
+GUI process on 2026-07-10 when a Settings-panel change eagerly loaded `TextEmbeddingEngine` in-process:
 
-**Remaining work (only if Linux/ROCm is added later):**
+```
+mesa: CommandLine Error: Option 'allow-incomplete-ir' registered more than once!
+LLVM ERROR: inconsistency in registered CommandLine options
+```
+
+This is a **native `abort()`** (Mesa's GL/shader-compiler LLVM and MIGraphX/comgr's LLVM both register
+the same global CommandLine flag in the same process) — not a .NET exception, not catchable, no
+in-process recovery. Absent mitigation it reproduces deterministically whenever all of: (1) Linux,
+(2) a non-`CPU` execution provider, (3) `RocmHostPreflight` does *not* already force CPU fallback, and
+(4) the GUI's Mesa/GL context is already initialized (true from app startup onward).
+
+**Interim mitigation (2026-07-10): `InferenceOptionsFactory.Create` gained an `allowGpuInProcess`
+parameter, default `false`.** When `useGpu` would otherwise be `true` and the legacy-ISA preflight
+hasn't already forced CPU, a new branch forces it anyway on Linux unless the caller explicitly opts
+in. Production call sites pass nothing and get the safe default; only the isolated
+`RocmExecutionProviderSmokeTests` (a separate `dotnet test` console process, no Mesa/GL context) opts
+in with `allowGpuInProcess: true` to keep exercising the real GPU path. `InferenceOptionsFactory.
+LastForcedCpuForGuiSafety` exposes whether this branch fired, for UI diagnostics
+(`SettingsViewModel.HostPreflightSummary`).
+
+| Call site | Status | Where |
+|---|---|---|
+| Settings "Refresh acceleration status" / auto-probe on open/save | ✅ Safe (engine itself is CPU-forced) | `SettingsViewModel.ProbeAccelerationAsync` — no gating needed anymore; `HostPreflightSummary` reports the forced-CPU reason when it applies |
+| Chat send (RAG query embedding) | ✅ Safe (same reason) | `QueryProcessingService.ProcessQueryAsync` → `IEmbeddingService.GenerateEmbeddingAsync`, tagged `WS5:` |
+| Knowledge-base indexing (ingest) | ✅ Safe (same reason) | `KnowledgeBaseService.IngestDocumentAsync`/`ProcessChunkAsync`, tagged `WS5:` |
+| Chat generation (Phi-3 response) | ✅ Safe (same reason) | `OnnxSLMService` → `TextGenerationEngine`, constructed alongside the embedding engine in `App.axaml.cs`, tagged `WS5:` |
+
+All four are safe **because GPU acceleration is currently unconditionally off in-process on Linux**,
+not because each site is individually guarded — the mitigation is centralized in
+`InferenceOptionsFactory.Create`. This is a real functional trade-off, not just a crash fix: ROCm/GPU
+acceleration is unavailable in the GUI on Linux until WS5 ships (verify the real GPU/ROCm path stays
+healthy via the isolated smoke test below, not via the app itself).
+
+**Remaining work (real fix — replace CPU-forcing with actual out-of-process GPU support):**
 - Add a `--worker inference` entry point in `Program.cs` calling `InferenceWorkerHost.RunAsync`.
 - Add a `NeedsOutOfProcess()` opt-in guard and an `OutOfProcessBaseInferenceEngine` subclass.
 - Decide on a serializer (default `SystemTextJsonWorkerSerializer` is fine for `string`↔`string`).
+- Once OOP lands, remove the `allowGpuInProcess` CPU-forcing in `InferenceOptionsFactory.Create`, or
+  flip its default to `true` for the new worker-routed construction path; confirm the call sites above
+  route through the worker, not the in-process engine.
 
 ---
 
