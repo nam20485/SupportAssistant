@@ -1,9 +1,12 @@
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Data.Core;
 using Avalonia.Data.Core.Plugins;
+using System;
 using System.Linq;
 using System.Reactive.Linq;
+using System.Threading.Tasks;
 using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
 using ReactiveUI;
@@ -22,6 +25,7 @@ namespace SupportAssistant;
 public partial class App : Application
 {
     private ServiceProvider? _serviceProvider;
+    private bool _legacyRocmPromptShown;
 
     public override void Initialize()
     {
@@ -41,9 +45,14 @@ public partial class App : Application
             ConfigureServices(services);
             _serviceProvider = services.BuildServiceProvider();
 
-            // Check if this is the first run
+            // Persist settings must be loaded before any consumer reads ExecutionProvider /
+            // IsFirstRun / etc. SettingsService starts with in-memory defaults only.
             var settingsService = _serviceProvider.GetRequiredService<ISettingsService>();
-            
+            // Resolve off the UI thread: blocking GetResult() on the Avalonia context deadlocks
+            // after LoadSettingsAsync's first await.
+            Task.Run(() => settingsService.LoadSettingsAsync()).GetAwaiter().GetResult();
+
+            // Check if this is the first run
             if (settingsService.Settings.General.IsFirstRun)
             {
                 // Show onboarding wizard
@@ -51,9 +60,9 @@ public partial class App : Application
                 {
                     DataContext = _serviceProvider.GetRequiredService<OnboardingWizardViewModel>(),
                 };
-                
+
                 desktop.MainWindow = onboardingWindow;
-                
+
                 // Handle wizard completion
                 onboardingWindow.Closing += (sender, e) =>
                 {
@@ -66,8 +75,9 @@ public partial class App : Application
                             DataContext = _serviceProvider.GetRequiredService<MainWindowViewModel>(),
                         };
                         desktop.MainWindow = mainWindow;
+                        AttachLegacyRocmGpuPrompt(mainWindow, settingsService, desktop);
                         mainWindow.Show();
-                        
+
                         // Start background initialization.
                         // ReactiveCommand.Execute() returns a cold IObservable<Unit> that must be
                         // subscribed to actually run the command; simply discarding it (fire-and-forget
@@ -80,14 +90,83 @@ public partial class App : Application
             else
             {
                 // Show main window directly
-                desktop.MainWindow = new MainWindow
+                var mainWindow = new MainWindow
                 {
                     DataContext = _serviceProvider.GetRequiredService<MainWindowViewModel>(),
                 };
+                desktop.MainWindow = mainWindow;
+                AttachLegacyRocmGpuPrompt(mainWindow, settingsService, desktop);
             }
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    /// <summary>
+    /// After the first window opens, prompt when the host is ROCm-ready except for a missing
+    /// launch-time HSA override on a legacy ISA. Exit shuts down; Continue keeps CPU fallback.
+    /// </summary>
+    private void AttachLegacyRocmGpuPrompt(
+        Window window,
+        ISettingsService settingsService,
+        IClassicDesktopStyleApplicationLifetime desktop)
+    {
+        EventHandler? handler = null;
+        handler = async (_, _) =>
+        {
+            window.Opened -= handler!;
+            await ShowLegacyRocmGpuPromptIfNeededAsync(window, settingsService, desktop).ConfigureAwait(true);
+        };
+        window.Opened += handler;
+    }
+
+    private async Task ShowLegacyRocmGpuPromptIfNeededAsync(
+        Window owner,
+        ISettingsService settingsService,
+        IClassicDesktopStyleApplicationLifetime desktop)
+    {
+        if (_legacyRocmPromptShown)
+        {
+            return;
+        }
+
+        RocmPreflightResult preflight;
+        try
+        {
+            preflight = RocmHostPreflight.Evaluate();
+        }
+        catch
+        {
+            return;
+        }
+
+        if (!LegacyRocmGpuPrompt.ShouldPrompt(preflight, settingsService))
+        {
+            return;
+        }
+
+        _legacyRocmPromptShown = true;
+
+        var dialog = new LegacyRocmGpuDialog(preflight);
+        var continueWithCpu = await dialog.ShowDialog<bool>(owner).ConfigureAwait(true);
+
+        if (dialog.DontAskAgain)
+        {
+            settingsService.Settings.Ai.BypassLegacyRocmGpuDialog = true;
+            try
+            {
+                await settingsService.SaveSettingsAsync().ConfigureAwait(true);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Failed to persist BypassLegacyRocmGpuDialog: {ex.Message}");
+            }
+        }
+
+        if (!continueWithCpu)
+        {
+            desktop.Shutdown();
+        }
     }
 
     private void DisableAvaloniaDataAnnotationValidation()
@@ -107,7 +186,7 @@ public partial class App : Application
     {
         // Settings service (should be one of the first)
         services.AddSingleton<ISettingsService, SettingsService>();
-        
+
         // Core services
         services.AddSingleton<IOnnxRuntimeService, OnnxRuntimeService>();
         services.AddSingleton<IConfigurationService, DefaultConfigurationService>();
@@ -121,6 +200,14 @@ public partial class App : Application
         // Inference engines (Phase 4 Stage 1). The library fetches models + tokenizer assets lazily
         // on first use; options are derived from the user's GPU/execution-provider setting. The
         // diagnostics service is attached so the resolved provider + fallback trail is surfaced.
+        //
+        // WS5: both engines load in-process (GUI process). InferenceOptionsFactory.Create's
+        // allowGpuInProcess defaults to false, so on Linux these two calls always get CPU-forced —
+        // interim safety against the Mesa↔MIGraphX/comgr LLVM CommandLine collision (reproduced
+        // 2026-07-10). This is the construction site to redirect through
+        // OutOfProcessBaseInferenceEngine when WS5's real out-of-process worker lands (at which point
+        // the CPU-forcing here should be removed). See docs/plans/inference-engine-integration-status.md
+        // §C and inference-integration-implementation-plan.md §6.
         services.AddSingleton(sp =>
         {
             var settings = sp.GetRequiredService<ISettingsService>();

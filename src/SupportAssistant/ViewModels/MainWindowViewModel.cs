@@ -42,7 +42,12 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             DataContext = _settingsViewModel
         };
-        
+
+        // Probe in the background so the dialog opens immediately; status lines update in place.
+        // Safe: engines are CPU-forced in-process by default on Linux (WS5: interim safety, see
+        // InferenceOptionsFactory.Create), so this can't trigger the Mesa/MIGraphX LLVM collision.
+        _ = _settingsViewModel.EnsureAccelerationProbedAsync();
+
         if (App.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop &&
             desktop.MainWindow != null)
         {
