@@ -53,7 +53,10 @@ public class QueryProcessingService : IQueryProcessingService
             // Preprocess the query
             var processedText = PreprocessQuery(query);
             
-            // Generate embedding
+            // WS5: lazily loads the real TextEmbeddingEngine in-process on first call, every chat
+            // message. Safe by construction — InferenceOptionsFactory.Create defaults to CPU-only
+            // in-process on Linux (see App.axaml.cs) — but revisit if that default ever changes.
+            // See docs/plans/inference-engine-integration-status.md §C.
             var embedding = await _embeddingService.GenerateEmbeddingAsync(processedText);
             
             stopwatch.Stop();

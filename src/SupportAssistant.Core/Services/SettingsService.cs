@@ -67,15 +67,25 @@ public class SettingsService : ISettingsService
     public event EventHandler<ApplicationSettings>? SettingsChanged;
 
     public SettingsService()
+        : this(Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "SupportAssistant"))
     {
-        // Use standard application data path
-        var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        _settingsDirectoryPath = Path.Combine(appDataPath, "SupportAssistant");
+    }
+
+    /// <summary>
+    /// Creates a settings service rooted at <paramref name="settingsDirectoryPath"/>
+    /// (primarily for tests; production uses the parameterless constructor).
+    /// </summary>
+    public SettingsService(string settingsDirectoryPath)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(settingsDirectoryPath);
+
+        _settingsDirectoryPath = settingsDirectoryPath;
         _settingsFilePath = Path.Combine(_settingsDirectoryPath, "settings.json");
-        
+
         _settings = new ApplicationSettings();
-        
-        // Ensure directory exists
+
         Directory.CreateDirectory(_settingsDirectoryPath);
     }
 
