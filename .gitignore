@@ -454,6 +454,12 @@ $RECYCLE.BIN/
 !.vscode/extensions.json
 
 ##
+## Cursor agent hooks runtime state (per-developer, machine-specific)
+## The hook scripts under .cursor/hooks/ ARE tracked; this state dir is not.
+##
+.cursor/hooks/state/
+
+##
 ## Distribution and Build Artifacts
 ##
 dist/
