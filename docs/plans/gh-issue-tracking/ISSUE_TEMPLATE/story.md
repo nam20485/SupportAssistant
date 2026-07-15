@@ -2,12 +2,12 @@
 ---
 name: Story
 about: Create a detailed story for implementation
-title: 'Story: '
-labels: ['story', 'enhancement']
+title: 'Story <N>.<M>: '
+labels: ['story']
 assignees: []
 ---
 
-# Story: [Story Name]
+# Story <N>.<M>: [Story Name]
 
 ## Objective
 

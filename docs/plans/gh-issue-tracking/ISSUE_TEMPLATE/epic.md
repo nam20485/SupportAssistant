@@ -1,11 +1,12 @@
-Title: [ProjectName] – [PhaseName] - Epic
-
-Labels: plan, design, architecture
-Assignees: [owner]
-
+---
+name: Epic
+about: Epic-level issue scoped to a single project/component
+title: 'Epic <N>: '
+labels: ['epic']
+assignees: []
 ---
 
-# [PhaseName] Epic – Breakdown
+# Epic <N>: [Epic Name]
 
 ## Overview
 Provide a concise summary of the epic, the problem it solves, the component it lives in, and the desired outcomes.

@@ -2,12 +2,12 @@
 ---
 name: Task
 about: Create an atomic, actionable task for implementation
-title: 'Task: '
+title: 'Task <N>.<M>.<K>: '
 labels: ['task']
 assignees: []
 ---
 
-# Task: [Task Name]
+# Task <N>.<M>.<K>: [Task Name]
 
 ## Description
 

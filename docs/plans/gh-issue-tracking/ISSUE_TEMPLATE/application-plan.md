@@ -1,12 +1,12 @@
->Title: [ProjectName] – Complete Implementation (Application Plan)
-
->Labels: plan, design, architecture
-
->Assignees: [owner]
-
+---
+name: Application Plan
+about: Top-level plan issue for a complete application
+title: 'Plan: '
+labels: ['plan']
+assignees: []
 ---
 
-# [ProjectName] – Complete Implementation
+# Plan: [ProjectName]
 
 ## Overview
 Provide a concise summary of the application, the problem it solves, the desired outcomes, and links to the filled-out template (docs/ai-new-app-template.md) and any supporting docs.
