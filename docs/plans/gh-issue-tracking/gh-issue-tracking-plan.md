@@ -167,7 +167,7 @@ When creating the hierarchy, use the application-plan template for the plan issu
 
 #### Scripts
 
-Scripts are **PowerShell 7 (`pwsh`, cross-platform)** and live in `scripts/gh-issue-tracking/`. There is **one script per discrete operation** (not one script for the whole skill), so the skill runs deterministically by composing them. Each script has a defined contract (arguments, stdout, exit codes) and supports a **`--dry-run`** mode.
+Scripts are **PowerShell 7 (`pwsh`, cross-platform)** and live in `.agents/skills/gh-issue-tracking-init/scripts/` — colocated with the skill so it is self-contained (a few general-purpose GitHub CLI helpers are vendored there too; see the skill's README). There is **one script per discrete operation** (not one script for the whole skill), so the skill runs deterministically by composing them. Each script has a defined contract (arguments, stdout, exit codes) and supports a **`--dry-run`** mode.
 
 Representative operations:
 

@@ -102,13 +102,13 @@ The skill "finds the current issue from the plan issues and project board views"
 
 ### 10. Specify script language, location, and the one-op-per-script contract
 Line 76 says to create a script per operation, but not where they live or in what language. The repo currently uses PowerShell + batch under `scripts/`, while the dev environment here is Linux — recommend **cross-platform** scripts (PowerShell 7 `pwsh`, or bash) driving `gh`. Define:
-- a directory (e.g. `scripts/gh-issue-tracking/`),
+- a directory (colocated with the skill: `.agents/skills/gh-issue-tracking-init/scripts/`, self-contained),
 - the discrete operations (create-label-set, create-milestone, create-project, create-issue, link-sub-issue, set-project-fields, set-dependency),
 - the input/output contract for each (arguments, stdout, exit codes) so skills can compose them.
 
 > **My feedback:** Powershell scripts in the `scripts/` dir.
 >
-> **Resolved:** Grouped in `scripts/gh-issue-tracking/` (PowerShell 7 / `pwsh`, cross-platform) to keep `scripts/` tidy.
+> **Resolved:** Grouped in `.agents/skills/gh-issue-tracking-init/scripts/` (PowerShell 7 / `pwsh`, cross-platform), colocated with the skill so it's self-contained (later moved from an initial `scripts/gh-issue-tracking/` location).
 
 ### 11. Make issue templates discoverable (or clarify they're programmatic)
 The templates live in `docs/plans/gh-issue-tracking/ISSUE_TEMPLATE/`, so GitHub's UI will **not** surface them (it only reads `.github/ISSUE_TEMPLATE/`). Clarify whether they are consumed programmatically by the scripts (fine as-is) or should be mirrored/moved to `.github/ISSUE_TEMPLATE/` for manual issue creation. If both manual and scripted creation are desired, keep one source of truth and copy at build time.
@@ -216,6 +216,6 @@ Fill in the **My answer** column with your decision for each.
 | 3 | Does a milestone map to a phase or a release? (#4) | Neither — native GH **milestone** = conceptual work group (POC/MVP/UI/Server), assigned to the epic + all descendants. |
 | 4 | Are defects in scope for the first version? (#6) | No — deferred to a later version. |
 | 5 | Should templates also be mirrored to `.github/ISSUE_TEMPLATE/` for manual use? (#11) | No — programmatic-only; kept out of GH's template locations so the UI won't surface them. |
-| 6 | What language/runtime should the scripts target (pwsh vs bash)? (#10) | PowerShell (`pwsh`) in `scripts/gh-issue-tracking/`. |
+| 6 | What language/runtime should the scripts target (pwsh vs bash)? (#10) | PowerShell (`pwsh`) in `.agents/skills/gh-issue-tracking-init/scripts/` (self-contained). |
 
 My feedback: Addressed above
