@@ -157,7 +157,10 @@ public class KnowledgeBaseService : IKnowledgeBaseService
     {
         try
         {
-            // Generate embedding for the chunk
+            // WS5: lazily loads the real TextEmbeddingEngine in-process on first call, during every
+            // KB indexing run. Safe by construction — InferenceOptionsFactory.Create defaults to
+            // CPU-only in-process on Linux (see App.axaml.cs) — but revisit if that default ever
+            // changes. See docs/plans/inference-engine-integration-status.md §C.
             var embedding = await _embeddingService.GenerateEmbeddingAsync(chunk.Content);
 
             // Create chunk metadata

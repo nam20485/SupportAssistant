@@ -1,5 +1,12 @@
 # **Application Implementation Specification**
 
+> **As-built note (2026-07-10):** This document is the original product/architecture spec. The
+> running app uses **Avalonia + custom `AgentOrchestrator` + `InferenceEngine.Core` / ONNX Runtime**
+> (DirectML / ROCm / CoreML / CPU), licensed **AGPL-3.0-or-later**. Semantic Kernel,
+> Microsoft.Extensions.AI, and Windows ML were considered but are **not** in the current codebase.
+> For contributor commands and layout, see [`AGENTS.md`](../AGENTS.md). For implementation status,
+> see [`docs/plans/STATUS.md`](./plans/STATUS.md).
+
 ## **Application Title:**
 
 ### **SupportAssistant**
@@ -16,7 +23,7 @@ The foundational architecture is designed with a principal focus on three strate
 
 [ImplementationTips.txt](./ImplementationTips.txt)
 [ImplementationPlan.txt](./ImplementationPlan.txt)
-[Index](./Index.html)
+[Index](./index.html)
 [Architecting AI for Open-Source Windows Applications](Architecting%20AI%20for%20Open-Source%20Windows%20Applications.md)
 
 ## **Target Platform Specification:**
@@ -53,19 +60,27 @@ To empower the AI with the capacity for direct system modification, it will be i
 * **Tool Definition:** A discrete set of C\# functions will be meticulously defined, with each function representing a single, specific, and granular operation (e.g., ModifyRegistryKey, EditIniFile, ChangeDisplayScaling). Each tool will be strongly typed and documented.  
 * **Model-Directed Action:** The SLM will be furnished with a manifest, or a structured description, of the available tools, including their purpose and required parameters. In response to a user request that necessitates an action, the model will not generate code but will instead generate a structured JSON object. This object specifies the designated tool to be invoked and the precise parameters to be used.  
 * **Secure Execution:** The C\# application will then parse this JSON output, validate it against a strict schema, and, only upon successful validation, invoke the corresponding C\# function. This methodology ensures that the SLM is fully abstracted from direct code execution, establishing a critical security demarcation that prevents the model from performing arbitrary or unintended actions.  
-* **Orchestration Layer:** A dedicated framework such as **Microsoft Semantic Kernel** or the **Microsoft.Extensions.AI** library will serve as an orchestration layer. This layer will manage the entire function-calling loop, simplifying the process of defining tools, managing conversational state, and handling the model's responses, thereby streamlining development.
+* **Orchestration Layer:** A dedicated framework such as **Microsoft Semantic Kernel** or the
+  **Microsoft.Extensions.AI** library was considered for the function-calling loop.
+  **As-built:** SupportAssistant uses a custom `AgentOrchestrator` with an `IToolRegistry` and
+  Human-in-the-Loop `ISecurityManager` instead.
 
 ## **AI/ML Model Specification:**
 
 * **Model:** **Microsoft Phi-3-mini**. This specific Small Language Model (SLM) is selected for its commendable performance-to-size ratio and its advanced instruction-following capabilities. Its relatively small VRAM and system memory footprint render it optimally suited for on-device deployment on consumer-grade hardware, where it must coexist efficiently with other running applications.  
-* **Licensing:** **MIT License**. The model is governed by this permissive open-source license, which authorizes free use, modification, and distribution for both commercial and non-commercial purposes. This legal framework aligns seamlessly with the non-commercial, community-driven objectives of this FOSS initiative.  
+* **Licensing:** The **Phi-3** model weights are under a permissive model license (see Microsoft’s
+  model card). The **application** is **AGPL-3.0-or-later** because it links `InferenceEngine.Core`
+  (AGPL). See [`LICENSE`](../LICENSE) and [`NOTICE`](../NOTICE).  
 * **Format:** **ONNX (Open Neural Network Exchange)**. The application will utilize the official, pre-optimized ONNX-formatted versions of the Phi-3 model. This strategy is critical as it obviates the need for developers to perform complex and error-prone model conversion and quantization processes, ensuring peak performance and compatibility within the Windows AI ecosystem out-of-the-box.
 
 ## **AI/ML Integration Strategy:**
 
-* **Runtime Engine:** **ONNX Runtime**. This high-performance, cross-platform inference engine, maintained by Microsoft, is designated for the loading and execution of the ONNX model. Its proven stability and performance are essential for a responsive user experience.  
-* **Hardware Acceleration:** The **Microsoft.ML.OnnxRuntime.DirectML** NuGet package will be integrated as a primary dependency. This package leverages **DirectML**, a low-level DirectX 12-based API that furnishes a unified hardware acceleration layer for GPUs and NPUs from all major vendors (AMD, Intel, NVIDIA, Qualcomm). This effectively addresses the significant engineering challenge of hardware heterogeneity, eliminating the need for separate, vendor-specific code paths (e.g., for CUDA or ROCm).  
-* **Operating System-Level Integration (Recommended):** For applications specifically targeting Windows 11 24H2 or later, the **Windows ML** platform will be employed via the Microsoft.Windows.AI.MachineLearning NuGet package. Windows ML functions as a high-level abstraction layer, intelligently managing the ONNX Runtime and its underlying execution providers. This simplifies application deployment by reducing package size, delegating dependency management to the OS, and future-proofing the application against updates in the AI stack.
+* **Runtime Engine:** **ONNX Runtime**, consumed primarily through **`InferenceEngine.Core`**
+  (session lifecycle, EP selection, diagnostics). DirectML (Windows), ROCm/MIGraphX (Linux),
+  CoreML (macOS), and CPU fallback are selected by the library.
+* **Hardware Acceleration:** Prefer the InferenceEngine-managed providers over hand-rolled EP setup.
+  **Windows ML** (`Microsoft.Windows.AI.MachineLearning`) remains a possible future path for
+  Windows 11 24H2+ but is **not** used in the current tree.
 
 ## **Data Sources and Management:**
 

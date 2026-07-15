@@ -1,0 +1,22 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "SupportAssistant",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "dotnet: build",
+      "program": "${workspaceFolder}/src/SupportAssistant/bin/Debug/net10.0/linux-x64/SupportAssistant.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/src/SupportAssistant",
+      "console": "integratedTerminal",
+      "stopAtEntry": false,
+      "env": {
+        "HSA_OVERRIDE_GFX_VERSION": "10.3.0"
+      },
+      "windows": {
+        "program": "${workspaceFolder}/src/SupportAssistant/bin/Debug/net10.0/win-x64/SupportAssistant.dll"
+      }
+    }
+  ]
+}

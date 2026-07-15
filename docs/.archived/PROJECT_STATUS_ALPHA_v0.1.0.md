@@ -1,3 +1,5 @@
+> **Historical — superseded by [`docs/plans/STATUS.md`](../plans/STATUS.md).** Do not treat "complete/production-ready" claims as current.
+
 # SupportAssistant Project Status - Alpha v0.1.0
 **Release Date:** July 16, 2025  
 **Version:** 0.1.0-alpha  

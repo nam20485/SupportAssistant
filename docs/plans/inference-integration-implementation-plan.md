@@ -33,7 +33,7 @@ Status legend: ⬜ not started · 🟡 in progress · ✅ merged · ⏸️ block
 
 | # | Workstream | Status | Priority | Depends on | Approx. size |
 |---|---|---|---|---|---|
-| **WS1** | Surface inference diagnostics | ⬜ not started | High | — | Small–Medium |
+| **WS1** | Surface inference diagnostics | ✅ implemented (PR #10) | High | — | Small–Medium |
 | **WS2** | Stage 4 — live streaming to the UI | ⬜ not started | High | WS1 | Medium |
 | **WS3** | Minor cleanups (vestigial DI, tool registration) | ⬜ not started | Medium | WS1 | Small |
 | **WS4** | Deferred tail (more tools, audit/permissions UI, hardening) | ⏸️ backlog | Low | — | Large / ongoing |
@@ -50,6 +50,16 @@ gated on a product decision (Linux/ROCm support) and stays out of scope until th
 Reverse-chronological. When a task/PR lands: flip its `[ ]` → `[x]`, set the §1 Status column, and
 prepend a dated entry here (include the PR # and key commits).
 
+- **2026-07-10** — WS1 (Surface inference diagnostics) implemented. Branch
+  `feat/inference-diagnostics` (4 commits: `8a986d5`, `5316af0`, `e697087`, `ca3b851`) off
+  `development` (`daa6a95`); PR [#10](https://github.com/nam20485/SupportAssistant/pull/10) opened. Shipped `EngineDiagnostics` DTO + `IInferenceDiagnosticsService`
+  (Core), wired `OnSessionInitialized` into both engines via `InferenceOptionsFactory.Create`,
+  registered the service in DI, and surfaced a read-only "Acceleration Status" block in Settings
+  (provider per engine + CPU-fallback notice, UI-thread-marshaled). `dotnet build` 0 warnings,
+  `dotnet test` 176 green. PR opened against `development`. **Scope held to additive-only** — the
+  `BackgroundTaskService` DirectML-probe refactor + `IOnnxRuntimeService` removal stay deferred to
+  WS3 per the ws-plan scope decision. One deviation: also updated
+  `MainWindowViewModelResolutionTests.BuildProvider` to mirror the new DI registration.
 - **2026-07-08** — Plan authored; all workstreams **not started** (⬜). WS1 development plan ready at
   [`ws1-inference-diagnostics-development-plan.md`](./ws1-inference-diagnostics-development-plan.md),
   awaiting go-ahead to branch `feat/inference-diagnostics`.
@@ -64,7 +74,7 @@ using the library's `InferenceEngineInfo` (`Provider`, `IsFallback`, `FallbackRe
 
 ### 2.1 Tasks
 
-- [ ] **T1.1 — Diagnostics snapshot DTO + service (Core).**
+- [x] **T1.1 — Diagnostics snapshot DTO + service (Core).**
   Add `src/SupportAssistant.Core/Models/EngineDiagnostics.cs`:
   ```csharp
   public sealed record EngineDiagnostics(
@@ -85,7 +95,7 @@ using the library's `InferenceEngineInfo` (`Provider`, `IsFallback`, `FallbackRe
   ```
   Implementation stores the two snapshots and raises `Updated` from a thread-pool thread.
 
-- [ ] **T1.2 — Wire `OnSessionInitialized` into the engines.**
+- [x] **T1.2 — Wire `OnSessionInitialized` into the engines.**
   Today `InferenceOptionsFactory.Create` sets only `UseGpuAcceleration`/`DeviceId`/`WarmupOnLoad`
   ([`InferenceOptionsFactory.cs:34-39`](../../src/SupportAssistant.Core/Engines/InferenceOptionsFactory.cs)).
   Change `Create` to accept the `IInferenceDiagnosticsService` (or have `App.axaml.cs` attach the
@@ -93,13 +103,13 @@ using the library's `InferenceEngineInfo` (`Provider`, `IsFallback`, `FallbackRe
   real `InferenceEngineInfo` into the service. Map `InferenceEngineInfo` → `EngineDiagnostics` in one
   place (Core), reading `.Provider`, `.IsFallback`, `.FallbackReason`, and formatting `.Checks`.
 
-- [ ] **T1.3 — Register the service + reorder DI.**
+- [x] **T1.3 — Register the service + reorder DI.**
   In `App.axaml.cs` `ConfigureServices`, register `IInferenceDiagnosticsService` **before** the
   engine factories, and pass it into `InferenceOptionsFactory.Create` for both the
   `TextEmbeddingEngine` and `TextGenerationEngine` singletons
   ([`App.axaml.cs:117-128`](../../src/SupportAssistant/App.axaml.cs)).
 
-- [ ] **T1.4 — Surface in the UI.**
+- [x] **T1.4 — Surface in the UI.**
   - `SettingsViewModel`: expose `EmbeddingProvider`/`GenerationProvider` + `IsFallback`/`FallbackReason`
     read-only properties refreshed from `IInferenceDiagnosticsService.Updated`; add a small
     "Acceleration" status block to `SettingsView.axaml` (provider + fallback note, e.g.
@@ -107,8 +117,8 @@ using the library's `InferenceEngineInfo` (`Provider`, `IsFallback`, `FallbackRe
   - `BackgroundTaskViewModel`/`MainWindowViewModel`: optionally show the generation provider in the
     post-startup status line.
 
-- [ ] **T1.5 — Retire the ad-hoc DirectML probe (bridge to WS3).**
-  `BackgroundTaskService.InitializeOnnxRuntimeAsync` currently calls `_onnxService.Initialize()` and
+- [ ] **T1.5 — Retire the ad-hoc DirectML probe (bridge to WS3).** *Deferred to WS3 per the WS1
+  scope decision (purely additive PR).* `BackgroundTaskService.InitializeOnnxRuntimeAsync` currently calls `_onnxService.Initialize()` and
   string-matches "DirectML" vs "CPU"
   ([`BackgroundTaskService.cs:196-222`](../../src/SupportAssistant.Core/Services/BackgroundTaskService.cs)).
   Replace that branch with the real diagnostics snapshot once the engines have loaded (the warmup on
@@ -126,6 +136,31 @@ using the library's `InferenceEngineInfo` (`Provider`, `IsFallback`, `FallbackRe
 - `OnSessionInitialized` fires lazily (on first `LoadAsync`, triggered by warmup or first predict).
   The Settings UI must tolerate `null` until the engine loads (show "Loading…"), not assume it's
   populated at startup.
+
+### 2.4 Implementation Notes (filled 2026-07-10)
+- **PR:** `feat/inference-diagnostics` → `development`, PR [#10](https://github.com/nam20485/SupportAssistant/pull/10).
+  Key commits: `8a986d5` (DTO+service), `5316af0` (wire + DI), `e697087` (Settings UI), `ca3b851` (tests).
+- **Deviation from plan (interface shape).** The ws-plan ships a **non-nullable**
+  `EngineDiagnostics Embedding/Generation` with an `IsLoaded` flag (default `false` until the first
+  `Report`), instead of the nullable `EngineDiagnostics?` sketched in §2.1 above. This is cleaner
+  (no nullable consumers in the UI VM) and fully satisfies the "tolerate Loading…" risk in §2.3 —
+  the VM checks `IsLoaded` rather than `null`.
+- **Callback attachment lives in the factory.** `InferenceOptionsFactory.Create` does a
+  `diagnostics is InferenceDiagnosticsService` type-check and attaches `OnSessionInitialized`. This
+  keeps all option-building in one place; the concrete-type check is intentional (the interface is
+  library-decoupled and has no `Report` method).
+- **Easier than expected.** `InferenceEngineInfo` and `ProviderDiagnosticCheck` are `public` records
+  with `init` setters, so tests build fallback snapshots directly — no ONNX session, no model, no
+  network. The 5 new tests run in ~1 ms total.
+- **Follow-up discovered.** `MainWindowViewModelResolutionTests.BuildProvider` hand-mirrors
+  `App.ConfigureServices`; it broke when `SettingsViewModel` gained a ctor param. It was updated to
+  mirror the new `IInferenceDiagnosticsService` registration. **A future WS3 cleanup** could replace
+  this hand-mirror by exposing `App.ConfigureServices` for test reuse (it is currently `private
+  static`), so DI drift can't silently break the resolution test again.
+- **Known minor leak (deferred).** `SettingsViewModel` (transient) subscribes to the singleton
+  `IInferenceDiagnosticsService.Updated`. The singleton keeps the transient VM alive until the
+  handler is unsubscribed. WS1 accepts this (the plan's disposal note); if Settings is opened many
+  times, wire a weak handler / `IDisposable` — tracked as a backlog item, not a WS3 blocker.
 
 ---
 
@@ -233,7 +268,8 @@ is consumer-only.
 
 ## 5. WS4 — Deferred tail (Low / ongoing backlog)
 
-Not detailed here; tracked as backlog. Grouped for awareness (from `issue_description.md` plan §9):
+Not detailed here; tracked as backlog. Grouped for awareness (from the original app spec /
+[`docs/ai-new-app-template.md`](../ai-new-app-template.md) deferred capabilities):
 
 - **More tools:** `CreateDirectory`/`DeleteFile`, INI/Registry/Environment, `GetRunningProcesses`,
   network diagnostics (`PingHost`/`TraceRoute`/`DNSLookup`/`PortScan`), system monitoring. Each is a
@@ -246,21 +282,40 @@ When a tool is picked up, follow the existing pattern: implement `ITool`, set `R
 
 ---
 
-## 6. WS5 — Out-of-process engine (Low / **conditional**)
+## 6. WS5 — Out-of-process engine (Low / **conditional**) — **⚠ priority re-check: collision reproduced live, interim CPU-forcing shipped**
 
-**Gated on a product decision to support Linux/ROCm.** Today SupportAssistant is Windows-only
-(`RuntimeIdentifiers = win-x64;win-arm64`), where DirectML is in-process and the ROCm/Mesa↔comgr LLVM
-collision cannot occur — so this is **not** needed now. Do **not** implement unless Linux/ROCm is added.
+**Originally gated on "a product decision to support Linux/ROCm."** That gate was written when Linux was
+purely a future target. It is not: SupportAssistant is actively developed/run on a Linux/AMD RDNA2 dev
+host, and the exact Mesa↔comgr LLVM collision this workstream exists to fix was **reproduced live on
+2026-07-10** (see [`inference-engine-integration-status.md` §C](./inference-engine-integration-status.md#c-out-of-process-engine--not-used-intentional--opt-in--collision-reproduced-2026-07-10-interim-mitigation-shipped-same-day)
+for the log signature and the full mitigation writeup). The same day, an interim fix landed in
+`InferenceOptionsFactory.Create` (`allowGpuInProcess` param, default `false`) that unconditionally
+forces CPU for every in-process caller on Linux — chat send, KB indexing, and the Settings probe are
+all safe now, but **only because GPU acceleration is currently disabled in the GUI on Linux entirely**,
+which is a real functional trade-off, not a targeted fix. Re-prioritize above Low: WS5 is now the only
+path back to GPU-accelerated inference on this platform, not just a crash fix.
+
+**Acceptance criteria once implemented** (in addition to the existing DoD in §8):
+- `InferenceOptionsFactory.Create`'s Linux CPU-forcing branch is removed, or its default flips to
+  `true` for the new worker-routed construction path — GPU acceleration works again on Linux via the
+  worker, without reproducing `LLVM ERROR: inconsistency in registered CommandLine options`.
+- `InferenceOptionsFactory.LastForcedCpuForGuiSafety` no longer fires for the worker-routed path, and
+  `SettingsViewModel.HostPreflightSummary`'s CPU-forced note goes away accordingly.
+- `rg 'WS5:' src/` (the marker left at every touch point below) has zero remaining hits that aren't
+  inside the new OOP wiring itself.
 
 If/when gated-in, the work is:
 - Add a `--worker inference` branch in `Program.cs` calling `InferenceWorkerHost.RunAsync(factory)`
-  ([`Program.cs:14-28`](../../src/SupportAssistant/Program.cs)).
+  ([`Program.cs:14-28`](../../src/SupportAssistant/Program.cs), tagged `WS5:`).
 - Add a `NeedsOutOfProcess()` opt-in guard (Linux + `libamdhip64.so.7` present) and an
   `OutOfProcessBaseInferenceEngine` subclass; choose `OutOfProcessEngineOptions`
-  (`WorkerExecutablePath`, `EngineId`, `WorkerEnvironment`, `EngineOptions`, timeouts).
+  (`WorkerExecutablePath`, `EngineId`, `WorkerEnvironment`, `EngineOptions`, timeouts). The engine
+  construction site to redirect is `App.axaml.cs`'s `ConfigureServices` (tagged `WS5:`).
 - Default `SystemTextJsonWorkerSerializer` is adequate for the `string`↔`string` text engines.
 - Diagnostics mirror automatically (the host proxy copies the worker's `EngineInfo`), so WS1 keeps
   working unchanged in OOP mode.
+- Remove (or bypass for worker-routed construction) the interim `allowGpuInProcess` CPU-forcing —
+  see `InferenceOptionsFactory.cs` and the acceptance criteria above.
 
 ---
 

@@ -12,11 +12,11 @@ Your goal is to create an application based on a filled-out application template
 2. Project structure has been created according to established guidelines
 3. All required components and dependencies have been implemented
 4. Application follows the specified technology stack and design principles
-5. All mandatory application requirements have been implemented (testing, documentation, containerization, etc.)
+5. All mandatory application requirements from the template have been implemented (testing, documentation, packaging as specified — for SupportAssistant that means Avalonia desktop packaging, not Docker/cloud by default)
 6. Application builds and runs successfully
 7. All acceptance criteria from the template have been satisfied
-8. Code quality standards and best practices have been followed
-9. Application is ready for deployment and use
+8. Code quality standards and best practices have been followed (`AGENTS.md`)
+9. Application is ready for the distribution path described in `docs/PACKAGING.md`
 
 ### Assignment
 

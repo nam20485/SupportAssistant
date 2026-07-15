@@ -47,7 +47,7 @@
       </Expander>
 
       <!-- AI Settings -->
-      <Expander Header="AI Model Settings" IsExpanded="False">
+      <Expander Header="AI Model Settings" IsExpanded="True">
         <StackPanel Spacing="15" Margin="10">
           
           <StackPanel Spacing="5">
@@ -67,6 +67,34 @@
                       Width="200" HorizontalAlignment="Left"/>
             <TextBlock Text="Hardware acceleration method (DirectML recommended for Windows)" 
                        FontSize="12" Foreground="{DynamicResource AppMutedForeground}"/>
+          </StackPanel>
+
+          <StackPanel Spacing="5">
+            <CheckBox IsChecked="{Binding BypassLegacyRocmGpuDialog}"
+                      Content="Skip legacy AMD GPU warning (fall back to CPU)"/>
+            <TextBlock Text="When HSA_OVERRIDE_GFX_VERSION is missing on gfx1031/1032/1034 hosts, skip the startup dialog and use CPU without prompting."
+                       FontSize="12" Foreground="{DynamicResource AppMutedForeground}" TextWrapping="Wrap"/>
+          </StackPanel>
+
+          <!-- Acceleration Status (WS1): read-only, shows the provider that actually loaded
+               per engine, plus a fallback notice if a CPU fallback occurred. -->
+          <StackPanel Spacing="5" Margin="0,5,0,0">
+            <TextBlock Text="Acceleration Status" FontWeight="SemiBold"/>
+            <TextBlock Text="{Binding HostPreflightSummary}" FontSize="12"
+                       Foreground="{DynamicResource AppMutedForeground}" TextWrapping="Wrap"/>
+            <TextBlock Text="{Binding EmbeddingStatus}" FontSize="12"
+                       Foreground="{DynamicResource AppMutedForeground}"/>
+            <TextBlock Text="{Binding GenerationStatus}" FontSize="12"
+                       Foreground="{DynamicResource AppMutedForeground}"/>
+            <TextBlock Text="{Binding FallbackNotice}" IsVisible="{Binding HasFallback}"
+                       FontSize="12" Foreground="Orange" TextWrapping="Wrap"/>
+            <TextBlock Text="{Binding DiagnosticsDetails}" FontSize="11"
+                       FontFamily="Consolas,monospace"
+                       Foreground="{DynamicResource AppMutedForeground}" TextWrapping="Wrap"/>
+            <Button Content="Refresh acceleration status"
+                    Command="{Binding ProbeAccelerationCommand}"
+                    IsEnabled="{Binding !IsProbingAcceleration}"
+                    HorizontalAlignment="Left"/>
           </StackPanel>
 
           <StackPanel Spacing="5">

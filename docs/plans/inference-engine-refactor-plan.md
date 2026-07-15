@@ -1,9 +1,13 @@
 # SupportAssistant — Inference Refactor Plan (InferenceEngine.Core)
 
-**Status:** Draft / implementation-ready
-**Supersedes:** the inference portions of [`STATUS.md`](../docs/STATUS.md) §4.A (re-starting point). The agent/tool/framework work in §4.B–§4.D is explicitly **deferred** (see Scope).
-**Intended location:** `docs/INFERENCE_ENGINE_REFACTOR_PLAN.md` (written here in `.kilo/plans/` due to plan-mode edit permissions; relocate freely).
-**Date:** 2026-07-04
+> **Historical / partially superseded (2026-07-10).** Stages 0–3 of this plan are **done**. Prefer
+> [`STATUS.md`](./STATUS.md) and [`inference-engine-integration-status.md`](./inference-engine-integration-status.md)
+> for current state. Package pins and "no real inference" premises below are outdated (now
+> `InferenceEngine.Core` 1.1.29, OnnxRuntime via `Directory.Build.props`, GitHub Packages feed — not nuget.org).
+
+**Status:** Historical (Stages 0–3 implemented; Stage 4 streaming remains — see WS2)
+**Supersedes (at authoring time):** older STATUS snapshots. **Now superseded by** the integration-status + implementation-plan docs above.
+**Date:** 2026-07-04 (banner added 2026-07-10)
 **Target:** `src/SupportAssistant.Core`, `src/SupportAssistant` (DI), `src/SupportAssistant.Tests`
 
 ---
@@ -155,7 +159,8 @@ New folder: `src/SupportAssistant.Core/Engines/` containing the two engine subcl
 
 ## 5. Deferred to follow-on plans (out of scope here)
 
-Per decision D2, these remain owned by [`PHASE_4_IMPLEMENTATION_PLAN.md`](../docs/PHASE_4_IMPLEMENTATION_PLAN.md) and STATUS §4.B–§4.D:
+Per decision D2 (at authoring time), agent/tool work lived in
+[`PHASE_4_IMPLEMENTATION_PLAN.md`](../.archived/plans/PHASE_4_IMPLEMENTATION_PLAN.md) (archived) and STATUS deferred sections:
 
 - §4.B — register `ToolRegistry`, `ISecurityManager`, `IAgentOrchestrator`, `ISLMService` end-to-end and route `ChatViewModel` through the orchestrator (the `ISLMService` implemented here is the prerequisite).
 - §4.C — real Human-in-the-Loop approval UI, real `RestoreBackupAsync`, uncommented `RegisterCoreTools()`.

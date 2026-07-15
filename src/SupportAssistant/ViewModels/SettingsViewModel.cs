@@ -1,12 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive;
+using System.Reactive.Concurrency;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using InferenceEngine.Core.Text;
 using ReactiveUI;
+using SupportAssistant.Core.Engines;
 using SupportAssistant.Core.Models;
 using SupportAssistant.Core.Services;
-using System.Reactive;
 
 namespace SupportAssistant.ViewModels;
 
@@ -16,20 +20,36 @@ namespace SupportAssistant.ViewModels;
 public class SettingsViewModel : ViewModelBase
 {
     private readonly ISettingsService _settingsService;
+    private readonly IInferenceDiagnosticsService _diag;
+    private readonly TextEmbeddingEngine _embeddingEngine;
+    private readonly TextGenerationEngine _generationEngine;
     private ApplicationSettings _settings;
     private string _statusMessage = string.Empty;
 
-    public SettingsViewModel(ISettingsService settingsService)
+    public SettingsViewModel(
+        ISettingsService settingsService,
+        IInferenceDiagnosticsService diagnostics,
+        TextEmbeddingEngine embeddingEngine,
+        TextGenerationEngine generationEngine)
     {
         _settingsService = settingsService;
+        _diag = diagnostics;
+        _embeddingEngine = embeddingEngine;
+        _generationEngine = generationEngine;
         _settings = _settingsService.Settings;
-        
+
+        // Refresh the acceleration-status block whenever either engine reports a load/fallback.
+        // The callback fires on a thread-pool thread, so marshal to the UI thread.
+        _diag.Updated += OnDiagUpdated;
+        RefreshDiagnostics();
+
         // Commands
         SaveCommand = ReactiveCommand.CreateFromTask(SaveAsync);
         ResetCommand = ReactiveCommand.CreateFromTask(ResetAsync);
         CancelCommand = ReactiveCommand.Create(Cancel);
         BrowseModelPathCommand = ReactiveCommand.Create(BrowseModelPath);
         BrowseKnowledgeBasePathCommand = ReactiveCommand.Create(BrowseKnowledgeBasePath);
+        ProbeAccelerationCommand = ReactiveCommand.CreateFromTask(ProbeAccelerationAsync);
         
         // Load current settings into editable properties
         LoadSettingsIntoProperties();
@@ -42,8 +62,18 @@ public class SettingsViewModel : ViewModelBase
     public ICommand CancelCommand { get; }
     public ICommand BrowseModelPathCommand { get; }
     public ICommand BrowseKnowledgeBasePathCommand { get; }
+    public ReactiveCommand<Unit, Unit> ProbeAccelerationCommand { get; }
     
     #endregion
+
+    /// <summary>
+    /// Loads both inference engines so <c>OnSessionInitialized</c> diagnostics populate. Safe to
+    /// call repeatedly and from Settings-open: the engines are CPU-forced in-process by default on
+    /// Linux (<see cref="InferenceOptionsFactory.Create"/>'s <c>allowGpuInProcess</c>), so this can
+    /// no longer trigger the Mesa/MIGraphX LLVM collision. See docs/plans/
+    /// inference-engine-integration-status.md §C.
+    /// </summary>
+    public Task EnsureAccelerationProbedAsync() => ProbeAccelerationAsync();
 
     #region Properties
 
@@ -51,6 +81,196 @@ public class SettingsViewModel : ViewModelBase
     {
         get => _statusMessage;
         set => this.RaiseAndSetIfChanged(ref _statusMessage, value);
+    }
+
+    // Acceleration Status (WS1): read-only, UI-thread-marshaled properties refreshed from the
+    // inference diagnostics service. Updated by RefreshDiagnostics / ProbeAccelerationAsync.
+    private string _embeddingStatus = "Embedding: not probed yet";
+    public string EmbeddingStatus
+    {
+        get => _embeddingStatus;
+        set => this.RaiseAndSetIfChanged(ref _embeddingStatus, value);
+    }
+
+    private string _generationStatus = "Generation: not probed yet";
+    public string GenerationStatus
+    {
+        get => _generationStatus;
+        set => this.RaiseAndSetIfChanged(ref _generationStatus, value);
+    }
+
+    private string _fallbackNotice = string.Empty;
+    public string FallbackNotice
+    {
+        get => _fallbackNotice;
+        set => this.RaiseAndSetIfChanged(ref _fallbackNotice, value);
+    }
+
+    private bool _hasFallback;
+    public bool HasFallback
+    {
+        get => _hasFallback;
+        set => this.RaiseAndSetIfChanged(ref _hasFallback, value);
+    }
+
+    private string _hostPreflightSummary = string.Empty;
+    public string HostPreflightSummary
+    {
+        get => _hostPreflightSummary;
+        set => this.RaiseAndSetIfChanged(ref _hostPreflightSummary, value);
+    }
+
+    private string _diagnosticsDetails = string.Empty;
+    public string DiagnosticsDetails
+    {
+        get => _diagnosticsDetails;
+        set => this.RaiseAndSetIfChanged(ref _diagnosticsDetails, value);
+    }
+
+    private bool _isProbingAcceleration;
+
+    /// <summary>Bound to the Refresh button's IsEnabled.</summary>
+    public bool IsProbingAcceleration
+    {
+        get => _isProbingAcceleration;
+        set => this.RaiseAndSetIfChanged(ref _isProbingAcceleration, value);
+    }
+
+    private void OnDiagUpdated(object? sender, EventArgs e) =>
+        RxApp.MainThreadScheduler.Schedule(RefreshDiagnostics);
+
+    private void RefreshDiagnostics()
+    {
+        var em = _diag.Embedding;
+        var ge = _diag.Generation;
+
+        EmbeddingStatus = em.IsLoaded
+            ? FormatEngineStatus(em)
+            : IsProbingAcceleration
+                ? "Embedding: probing… (MIGraphX compile can take ~30s)"
+                : "Embedding: not probed yet";
+        GenerationStatus = ge.IsLoaded
+            ? FormatEngineStatus(ge)
+            : IsProbingAcceleration
+                ? "Generation: probing… (first model load can take minutes)"
+                : "Generation: not probed yet";
+
+        var fb = new[] { em, ge }
+            .Where(x => x.IsFallback)
+            .Select(x => $"{x.EngineKind} fell back to CPU — {x.FallbackReason}")
+            .ToList();
+        FallbackNotice = string.Join("\n", fb);
+        HasFallback = fb.Any();
+
+        HostPreflightSummary = BuildHostPreflightSummary();
+        DiagnosticsDetails = BuildDiagnosticsDetails(em, ge);
+    }
+
+    private static string FormatEngineStatus(EngineDiagnostics diag)
+    {
+        var suffix = diag.IsFallback ? " (CPU fallback)" : string.Empty;
+        return $"{diag.EngineKind}: {diag.Provider}{suffix}";
+    }
+
+    private string BuildHostPreflightSummary()
+    {
+        var provider = ExecutionProvider.Trim();
+        var builder = new StringBuilder();
+        builder.Append($"Configured provider: {provider}");
+
+        if (OperatingSystem.IsLinux())
+        {
+            var hsa = Environment.GetEnvironmentVariable(RocmHostPreflight.OverrideEnvironmentVariable);
+            builder.Append($"\n{RocmHostPreflight.OverrideEnvironmentVariable}=");
+            builder.Append(string.IsNullOrEmpty(hsa) ? "(unset)" : hsa);
+
+            var preflight = InferenceOptionsFactory.LastRocmPreflight ?? RocmHostPreflight.Evaluate();
+            builder.Append($"\nROCm host preflight: {preflight.Status}");
+            if (!string.IsNullOrWhiteSpace(preflight.Message))
+            {
+                builder.Append($"\n{preflight.Message}");
+            }
+
+            // WS5: interim safety — InferenceOptionsFactory.Create forces CPU for the real,
+            // already-constructed engines whenever this is true (see App.axaml.cs) — avoids the
+            // Mesa/MIGraphX LLVM CommandLine collision. Reflects the actual decision already made,
+            // not a guess, so this note only appears when it's actually in effect.
+            if (InferenceOptionsFactory.LastForcedCpuForGuiSafety)
+            {
+                builder.Append(
+                    "\nNote: GPU acceleration is CPU-forced in this process (WS5 interim safety — " +
+                    "avoids a Mesa/MIGraphX LLVM crash; see " +
+                    "docs/plans/inference-engine-integration-status.md §C). Verify the real GPU/ROCm " +
+                    "path safely with:\n" +
+                    "    dotnet test --filter FullyQualifiedName~RocmExecutionProviderSmokeTests -v n");
+            }
+        }
+
+        return builder.ToString();
+    }
+
+    private static string BuildDiagnosticsDetails(EngineDiagnostics embedding, EngineDiagnostics generation)
+    {
+        var lines = new List<string>();
+        AppendCheckLines(lines, embedding);
+        AppendCheckLines(lines, generation);
+        return lines.Count == 0
+            ? "EP selection trail appears after engines load (Refresh acceleration status)."
+            : string.Join('\n', lines);
+    }
+
+    private static void AppendCheckLines(List<string> lines, EngineDiagnostics diag)
+    {
+        if (!diag.IsLoaded || diag.Checks.Count == 0)
+        {
+            return;
+        }
+
+        lines.Add($"--- {diag.EngineKind} ---");
+        lines.AddRange(diag.Checks);
+    }
+
+    private async Task ProbeAccelerationAsync()
+    {
+        if (IsProbingAcceleration)
+        {
+            return;
+        }
+
+        // Safe: the already-constructed engines (App.axaml.cs) are CPU-forced by default on Linux
+        // (InferenceOptionsFactory.Create's allowGpuInProcess = false), so LoadAsync() here can no
+        // longer trigger the Mesa/MIGraphX LLVM collision. See docs/plans/
+        // inference-engine-integration-status.md §C.
+        IsProbingAcceleration = true;
+        RefreshDiagnostics();
+        try
+        {
+            if (!_diag.Embedding.IsLoaded)
+            {
+                EmbeddingStatus = "Embedding: probing… (MIGraphX compile can take ~30s)";
+                await Task.Run(async () => await _embeddingEngine.LoadAsync().ConfigureAwait(false)).ConfigureAwait(true);
+            }
+
+            RefreshDiagnostics();
+
+            if (!_diag.Generation.IsLoaded)
+            {
+                GenerationStatus = "Generation: probing… (first model load can take minutes)";
+                await Task.Run(async () => await _generationEngine.LoadAsync().ConfigureAwait(false)).ConfigureAwait(true);
+            }
+
+            RefreshDiagnostics();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Acceleration probe failed: {ex.Message}";
+            RefreshDiagnostics();
+        }
+        finally
+        {
+            IsProbingAcceleration = false;
+            RefreshDiagnostics();
+        }
     }
 
     // General Settings
@@ -151,6 +371,13 @@ public class SettingsViewModel : ViewModelBase
     {
         get => _enableStreaming;
         set => this.RaiseAndSetIfChanged(ref _enableStreaming, value);
+    }
+
+    private bool _bypassLegacyRocmGpuDialog;
+    public bool BypassLegacyRocmGpuDialog
+    {
+        get => _bypassLegacyRocmGpuDialog;
+        set => this.RaiseAndSetIfChanged(ref _bypassLegacyRocmGpuDialog, value);
     }
 
     // Knowledge Base Settings
@@ -328,6 +555,7 @@ public class SettingsViewModel : ViewModelBase
         MaxTokens = _settings.Ai.MaxTokens;
         InferenceTimeoutSeconds = _settings.Ai.InferenceTimeoutSeconds;
         EnableStreaming = _settings.Ai.EnableStreaming;
+        BypassLegacyRocmGpuDialog = _settings.Ai.BypassLegacyRocmGpuDialog;
 
         // Knowledge Base
         KnowledgeBasePath = _settings.KnowledgeBase.KnowledgeBasePath;
@@ -380,7 +608,8 @@ public class SettingsViewModel : ViewModelBase
                 TopK = TopK,
                 MaxTokens = MaxTokens,
                 InferenceTimeoutSeconds = InferenceTimeoutSeconds,
-                EnableStreaming = EnableStreaming
+                EnableStreaming = EnableStreaming,
+                BypassLegacyRocmGpuDialog = BypassLegacyRocmGpuDialog,
             },
             KnowledgeBase = new KnowledgeBaseSettings
             {
@@ -428,14 +657,30 @@ public class SettingsViewModel : ViewModelBase
         try
         {
             StatusMessage = "Saving settings...";
-            
+
+            var previousProvider = _settings.Ai.ExecutionProvider;
             var newSettings = CreateSettingsFromProperties();
             await _settingsService.UpdateSettingsAsync(newSettings);
-            
-            StatusMessage = "Settings saved successfully!";
-            
-            // Clear status message after a delay
-            await Task.Delay(2000);
+            _settings = _settingsService.Settings;
+
+            var providerChanged = !string.Equals(
+                previousProvider,
+                newSettings.Ai.ExecutionProvider,
+                StringComparison.OrdinalIgnoreCase);
+
+            // Probing here reflects the *current session's* already-constructed engines, which were
+            // built from settings at app startup — not the just-saved value. A provider change only
+            // takes effect after restart (App.axaml.cs constructs the engines once, at DI setup).
+            await ProbeAccelerationAsync().ConfigureAwait(true);
+
+            if (!StatusMessage.StartsWith("Acceleration probe failed", StringComparison.Ordinal))
+            {
+                StatusMessage = providerChanged
+                    ? "Settings saved. Restart the app for the new execution provider to take effect."
+                    : "Settings saved successfully!";
+            }
+
+            await Task.Delay(4000);
             StatusMessage = string.Empty;
         }
         catch (Exception ex)

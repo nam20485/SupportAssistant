@@ -1,3 +1,5 @@
+> **Historical — superseded by [`docs/plans/STATUS.md`](../plans/STATUS.md).** Do not treat "complete/production-ready" claims as current.
+
 # Phase 4.2: SLM Integration - COMPLETE
 
 ## Overview

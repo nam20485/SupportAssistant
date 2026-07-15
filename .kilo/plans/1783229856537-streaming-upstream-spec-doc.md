@@ -4,7 +4,7 @@
 **Date:** 2026-07-04
 **Author:** planning agent
 **Scope decision:** Produce ONE new documentation file only. No source-code changes.
-The three referenced plans (`docs/plans/PHASE_4_IMPLEMENTATION_PLAN.md`,
+The three referenced plans (`docs/.archived/plans/PHASE_4_IMPLEMENTATION_PLAN.md`,
 `docs/plans/STATUS.md`, `docs/plans/inference-engine-refactor-plan.md`) are authoritative
 context and are NOT re-implemented or rewritten here.
 

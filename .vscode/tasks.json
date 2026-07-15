@@ -1,15 +1,106 @@
 {
-	"version": "2.0.0",
-	"tasks": [
-		{
-			"type": "dotnet",
-			"task": "build",
-			"group": {
-				"kind": "build",
-				"isDefault": true
-			},
-			"problemMatcher": [],
-			"label": "dotnet: build"
-		}
-	]
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "dotnet: build",
+      "type": "process",
+      "command": "dotnet",
+      "args": [
+        "build",
+        "${workspaceFolder}/src/SupportAssistant/SupportAssistant.csproj",
+        "-c",
+        "Debug",
+        "-r",
+        "linux-x64",
+        "/property:GenerateFullPaths=true",
+        "/consoleloggerparameters:NoSummary"
+      ],
+      "windows": {
+        "args": [
+          "build",
+          "${workspaceFolder}/src/SupportAssistant/SupportAssistant.csproj",
+          "-c",
+          "Debug",
+          "-r",
+          "win-x64",
+          "/property:GenerateFullPaths=true",
+          "/consoleloggerparameters:NoSummary"
+        ]
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "dotnet: build (Release)",
+      "type": "process",
+      "command": "dotnet",
+      "args": [
+        "build",
+        "${workspaceFolder}/src/SupportAssistant/SupportAssistant.csproj",
+        "-c",
+        "Release",
+        "-r",
+        "linux-x64",
+        "/property:GenerateFullPaths=true",
+        "/consoleloggerparameters:NoSummary"
+      ],
+      "windows": {
+        "args": [
+          "build",
+          "${workspaceFolder}/src/SupportAssistant/SupportAssistant.csproj",
+          "-c",
+          "Release",
+          "-r",
+          "win-x64",
+          "/property:GenerateFullPaths=true",
+          "/consoleloggerparameters:NoSummary"
+        ]
+      },
+      "group": "build",
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "dotnet: run (Release)",
+      "dependsOn": ["dotnet: build (Release)"],
+      "dependsOrder": "sequence",
+      "type": "process",
+      "command": "dotnet",
+      "args": [
+        "run",
+        "--project",
+        "${workspaceFolder}/src/SupportAssistant/SupportAssistant.csproj",
+        "-c",
+        "Release",
+        "-r",
+        "linux-x64",
+        "--no-build"
+      ],
+      "windows": {
+        "args": [
+          "run",
+          "--project",
+          "${workspaceFolder}/src/SupportAssistant/SupportAssistant.csproj",
+          "-c",
+          "Release",
+          "-r",
+          "win-x64",
+          "--no-build"
+        ]
+      },
+      "options": {
+        "cwd": "${workspaceFolder}/src/SupportAssistant",
+        "env": {
+          "HSA_OVERRIDE_GFX_VERSION": "10.3.0"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    }
+  ]
 }

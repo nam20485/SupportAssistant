@@ -1,18 +1,15 @@
 # InferenceEngine.Core Integration — Committed vs. Remaining
 
-**Last verified:** 2026-07-08 (read against current `development` source tree + the local library clone)
-**SupportAssistant head:** `892a34c` — "docs(plan): add empty-chat example prompts plan"
+**Last verified:** 2026-07-10 (WS1 diagnostics committed; Stages 0–3 on `development`)
 **Library consumed:** `InferenceEngine.Core` **1.1.29** (bumped `57caa3a`, 2026-07-07, from `1.1.0-dev.18`)
 **Upstream guide cross-checked:** [`consumer-integration-guide.md`](https://github.com/intel-agency/inference-engine-lib/blob/main/docs/consumer-integration-guide.md) (intel-agency/inference-engine-lib)
 
 > **What "we" means here.** SupportAssistant is the **consumer**. `InferenceEngine.Core` is the
 > external library (`intel-agency/inference-engine-lib`, published as the `InferenceEngine.Core`
 > NuGet package). This doc answers: *for each API surface the library exposes, what has SupportAssistant
-> committed, and what remains?* A short library-side section at the end records what the library
-> itself provides (verified against the local clone at
-> `/home/nam20485/src/github/intel-agency/inference-engine-lib`, branch `development`, head `7414b5f`).
+> committed, and what remains?*
 >
-> **This supersedes the Stage-4 blocker note in [`STATUS.md`](./STATUS.md)** (verified 2026-07-05 at
+> **This supersedes the Stage-4 blocker note in older `STATUS.md` snapshots** (verified 2026-07-05 at
 > `b758191`, *before* the `1.1.29` bump): the library's H3 decode-delta defect that blocked UI
 > streaming **is fixed upstream and is in the package we now consume.**
 
@@ -23,9 +20,9 @@
 | Surface | Library exposes? | SupportAssistant committed? | Remaining |
 |---|---|---|---|
 | **A. One-shot text engines** (generation + embedding) | ✅ `Text/` | ✅ Done — wired in DI, real inference | Minor cleanup only |
-| **B. Streaming text generation** | ✅ `BaseStreamingInferenceEngine` | 🟡 Partial — engine streams internally, but the stream is **buffered to a one-shot string**; the UI never sees tokens | Expose streaming end-to-end to the UI (Stage 4) |
-| **C. Out-of-process engine** | ✅ `OutOfProcessBaseInferenceEngine` + `Worker/` | ❌ Not used (no reference, no `--worker` entry point) | Opt-in wiring only if/when Linux/ROCm is targeted |
-| **Diagnostics API** (`InferenceEngineInfo`, `Checks`, `OnSessionInitialized`) | ✅ `Diagnostics/` | ❌ Not wired — `InferenceOptionsFactory` sets only GPU/DeviceId/Warmup | Surface provider + fallback reason to the user |
+| **B. Streaming text generation** | ✅ `BaseStreamingInferenceEngine` | 🟡 Partial — engine streams internally, but the stream is **buffered to a one-shot string**; the UI never sees tokens | Expose streaming end-to-end to the UI (Stage 4 / WS2) |
+| **C. Out-of-process engine** | ✅ `OutOfProcessBaseInferenceEngine` + `Worker/` | ❌ Not used (no reference, no `--worker` entry point) | Opt-in wiring only if/when Linux/ROCm OOP is required |
+| **Diagnostics API** (`InferenceEngineInfo`, `Checks`, `OnSessionInitialized`) | ✅ `Diagnostics/` | ✅ Done (WS1) — `IInferenceDiagnosticsService` + Settings UI (PR #10) | Optional: retire ad-hoc DirectML probe (WS3) |
 | **Agent + tools + HITL** (SupportAssistant-owned, not library) | n/a | ✅ Stage 3 done (minimal tools) | More tools, audit/permissions UI, hardening |
 
 ---
@@ -85,46 +82,80 @@ decode-delta** defect (streamed chunks could be wrong/duplicated/dropped). That 
 
 ---
 
-## C. Out-of-process engine — ❌ NOT USED (intentional / opt-in)
+## C. Out-of-process engine — ❌ NOT USED (intentional / opt-in) — **⚠ collision reproduced 2026-07-10, interim mitigation shipped same day**
 
 The library's escape hatch for the Linux/ROCm Mesa↔comgr LLVM collision is fully present
 (`OutOfProcessBaseInferenceEngine`, `OutOfProcessEngineOptions`, `Worker/InferenceWorkerHost`,
-`Worker/WorkerProtocol`), but SupportAssistant does **not** consume it.
+`Worker/WorkerProtocol`), but SupportAssistant does **not** consume it — an app-side CPU-forcing
+mitigation (below) closes the crash risk instead, until the real out-of-process worker lands.
 
 **Evidence:** `rg 'OutOfProcess|InferenceWorkerHost|WorkerExecutable' src/` → no matches. `Program.cs`
-has no `--worker` branch ([`Program.cs:14-28`](../../src/SupportAssistant/Program.cs)).
+has no `--worker` branch ([`Program.cs:14-28`](../../src/SupportAssistant/Program.cs)). Every in-process
+touch point is tagged `WS5:` in source — `rg 'WS5:' src/` is now the up-to-date evidence command.
 
-**Why this is fine for now:** SupportAssistant targets **Windows only**
-(`RuntimeIdentifiers = win-x64;win-arm64`, [`SupportAssistant.csproj:22`](../../src/SupportAssistant/SupportAssistant.csproj)),
-where DirectML is in-process and the ROCm/GL collision cannot occur. The upstream guide itself marks
-the out-of-process path as opt-in ("only route through the worker when the collision is actually
-possible").
+**Correction — this is no longer purely theoretical.** The "Windows only" premise below describes the
+*shipping RID list*, not the *dev host*: SupportAssistant is actively run on a Linux/AMD RDNA2 dev host
+(`linux-x64`, `HSA_OVERRIDE_GFX_VERSION=10.3.0`), and the predicted collision was reproduced live in the
+GUI process on 2026-07-10 when a Settings-panel change eagerly loaded `TextEmbeddingEngine` in-process:
 
-**Remaining work (only if Linux/ROCm is added later):**
+```
+mesa: CommandLine Error: Option 'allow-incomplete-ir' registered more than once!
+LLVM ERROR: inconsistency in registered CommandLine options
+```
+
+This is a **native `abort()`** (Mesa's GL/shader-compiler LLVM and MIGraphX/comgr's LLVM both register
+the same global CommandLine flag in the same process) — not a .NET exception, not catchable, no
+in-process recovery. Absent mitigation it reproduces deterministically whenever all of: (1) Linux,
+(2) a non-`CPU` execution provider, (3) `RocmHostPreflight` does *not* already force CPU fallback, and
+(4) the GUI's Mesa/GL context is already initialized (true from app startup onward).
+
+**Interim mitigation (2026-07-10): `InferenceOptionsFactory.Create` gained an `allowGpuInProcess`
+parameter, default `false`.** When `useGpu` would otherwise be `true` and the legacy-ISA preflight
+hasn't already forced CPU, a new branch forces it anyway on Linux unless the caller explicitly opts
+in. Production call sites pass nothing and get the safe default; only the isolated
+`RocmExecutionProviderSmokeTests` (a separate `dotnet test` console process, no Mesa/GL context) opts
+in with `allowGpuInProcess: true` to keep exercising the real GPU path. `InferenceOptionsFactory.
+LastForcedCpuForGuiSafety` exposes whether this branch fired, for UI diagnostics
+(`SettingsViewModel.HostPreflightSummary`).
+
+| Call site | Status | Where |
+|---|---|---|
+| Settings "Refresh acceleration status" / auto-probe on open/save | ✅ Safe (engine itself is CPU-forced) | `SettingsViewModel.ProbeAccelerationAsync` — no gating needed anymore; `HostPreflightSummary` reports the forced-CPU reason when it applies |
+| Chat send (RAG query embedding) | ✅ Safe (same reason) | `QueryProcessingService.ProcessQueryAsync` → `IEmbeddingService.GenerateEmbeddingAsync`, tagged `WS5:` |
+| Knowledge-base indexing (ingest) | ✅ Safe (same reason) | `KnowledgeBaseService.IngestDocumentAsync`/`ProcessChunkAsync`, tagged `WS5:` |
+| Chat generation (Phi-3 response) | ✅ Safe (same reason) | `OnnxSLMService` → `TextGenerationEngine`, constructed alongside the embedding engine in `App.axaml.cs`, tagged `WS5:` |
+
+All four are safe **because GPU acceleration is currently unconditionally off in-process on Linux**,
+not because each site is individually guarded — the mitigation is centralized in
+`InferenceOptionsFactory.Create`. This is a real functional trade-off, not just a crash fix: ROCm/GPU
+acceleration is unavailable in the GUI on Linux until WS5 ships (verify the real GPU/ROCm path stays
+healthy via the isolated smoke test below, not via the app itself).
+
+**Remaining work (real fix — replace CPU-forcing with actual out-of-process GPU support):**
 - Add a `--worker inference` entry point in `Program.cs` calling `InferenceWorkerHost.RunAsync`.
 - Add a `NeedsOutOfProcess()` opt-in guard and an `OutOfProcessBaseInferenceEngine` subclass.
 - Decide on a serializer (default `SystemTextJsonWorkerSerializer` is fine for `string`↔`string`).
+- Once OOP lands, remove the `allowGpuInProcess` CPU-forcing in `InferenceOptionsFactory.Create`, or
+  flip its default to `true` for the new worker-routed construction path; confirm the call sites above
+  route through the worker, not the in-process engine.
 
 ---
 
-## D. Diagnostics API — ❌ NOT WIRED
+## D. Diagnostics API — ✅ COMMITTED (WS1)
 
 The library's diagnostics (`InferenceEngineInfo`: `Provider`, `IsFallback`, `FallbackReason`, the
-ordered `Checks` trail, and the `OnSessionInitialized` callback) are **available but never surfaced**.
-SupportAssistant never tells the user *which* execution provider loaded or *why* it fell back to CPU.
+ordered `Checks` trail, and the `OnSessionInitialized` callback) are **wired** into SupportAssistant
+via `IInferenceDiagnosticsService` / `EngineDiagnostics`, attached in `InferenceOptionsFactory`, and
+surfaced in the AI Settings UI (PR #10, 2026-07-10).
 
 **Evidence:**
-- `rg 'OnSessionInitialized|EngineInfo|InferenceEngineInfo' src/` → the only hit is an XML doc comment
-  in `InferenceOptionsFactory.cs:14`. Nothing reads `EngineInfo` at runtime.
-- `InferenceOptionsFactory.Create` sets only `UseGpuAcceleration`, `DeviceId`, `WarmupOnLoad`
-  ([`InferenceOptionsFactory.cs:34-39`](../../src/SupportAssistant.Core/Engines/InferenceOptionsFactory.cs)).
-  No `OnSessionInitialized` callback is attached in `App.axaml.cs` either.
+- `src/SupportAssistant.Core/Services/InferenceDiagnosticsService.cs`
+- `src/SupportAssistant.Core/Engines/InferenceOptionsFactory.cs` (`OnSessionInitialized`)
+- `src/SupportAssistant/ViewModels/SettingsViewModel.cs` + Settings view bindings
+- Plan: [`ws1-inference-diagnostics-development-plan.md`](./ws1-inference-diagnostics-development-plan.md)
 
-**Remaining work (low effort, high UX value):**
-- Attach `OnSessionInitialized = info => ...` in `InferenceOptionsFactory.Create` (or at construction)
-  and capture/log `info.Provider`, `info.IsFallback`, `info.FallbackReason`, `info.Checks`.
-- Surface the outcome in the onboarding/settings UI (e.g. "GPU: DirectML (MIGraphX unavailable:
-  libmigraphx_c.so.3 missing)") rather than silently running on CPU.
+**Remaining (optional / WS3):**
+- Retire the ad-hoc DirectML probe once Settings always shows library-reported provider/fallback.
 
 ---
 
@@ -195,19 +226,17 @@ Phase 1 (H1–H5, M1–M7, T1–T6) has landed — commits `2f89b64` (post-revie
 
 ## H. Recommended next steps (priority order)
 
-1. **Surface diagnostics** (§D) — cheapest, immediately useful UX; attach `OnSessionInitialized` and
-   show provider/fallback in settings.
-2. **Finish Stage 4 streaming** (§B) — blocker removed; expose `ISLMService.StreamResponseAsync` and
+1. **Finish Stage 4 streaming** (§B / WS2) — blocker removed; expose `ISLMService.StreamResponseAsync` and
    render tokens in `ChatViewModel`, with a one-shot fallback + tests.
-3. **Merge `development → master`** (§F).
-4. **Minor cleanups** (§E) — drop vestigial `IOnnxRuntimeService`, pick one tool-registration path.
-5. **Deferred tail** (§E) — more tools, audit/permissions UI, hardening.
-6. *(Conditional)* **Out-of-process** (§C) — only if/when a Linux/ROCm target is added.
+2. **Merge `development → master`** (§F / WS6).
+3. **Minor cleanups** (§E / WS3) — drop vestigial `IOnnxRuntimeService`, pick one tool-registration path,
+   optionally retire the ad-hoc DirectML probe.
+4. **Deferred tail** (§E) — more tools, audit/permissions UI, hardening.
+5. *(Conditional)* **Out-of-process** (§C) — only if/when a Linux/ROCm OOP target is required.
 
 ---
 
-*Verification method: read the current `development` source tree of SupportAssistant
-(`src/SupportAssistant.Core/{Engines,Agent,Tools,Services,Security}` + `src/SupportAssistant/{Program.cs,App.axaml.cs,ViewModels/ChatViewModel.cs}`)
-and the local library clone `intel-agency/inference-engine-lib` (`InferenceEngine.Core/{Text,Diagnostics,Worker,Base*.cs,OutOfProcess*.cs}`),
-plus the git history of both repos. No claims are taken from the older `STATUS.md` without re-checking
-against current code.*
+*Verification method: read SupportAssistant source under
+`src/SupportAssistant.Core/{Engines,Agent,Tools,Services,Security}` and
+`src/SupportAssistant/{Program.cs,App.axaml.cs,ViewModels/}`, plus git history and the WS1 plan.
+Older `STATUS.md` claims are not trusted without re-checking code.*

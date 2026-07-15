@@ -1,5 +1,8 @@
 # SupportAssistant — Inference Refactor Plan (InferenceEngine.Core)
 
+> **Duplicate / historical copy** of `docs/plans/inference-engine-refactor-plan.md`. Prefer that file
+> (which has a supersession banner). Stages 0–3 are done — see `docs/plans/STATUS.md`.
+
 **Status:** Draft / implementation-ready
 **Supersedes:** the inference portions of [`STATUS.md`](../docs/STATUS.md) §4.A (re-starting point). The agent/tool/framework work in §4.B–§4.D is explicitly **deferred** (see Scope).
 **Intended location:** `docs/INFERENCE_ENGINE_REFACTOR_PLAN.md` (written here in `.kilo/plans/` due to plan-mode edit permissions; relocate freely).
@@ -155,7 +158,7 @@ New folder: `src/SupportAssistant.Core/Engines/` containing the two engine subcl
 
 ## 5. Deferred to follow-on plans (out of scope here)
 
-Per decision D2, these remain owned by [`PHASE_4_IMPLEMENTATION_PLAN.md`](../docs/PHASE_4_IMPLEMENTATION_PLAN.md) and STATUS §4.B–§4.D:
+Per decision D2, these remain owned by [`PHASE_4_IMPLEMENTATION_PLAN.md`](../../docs/.archived/plans/PHASE_4_IMPLEMENTATION_PLAN.md) (archived) and STATUS deferred sections:
 
 - §4.B — register `ToolRegistry`, `ISecurityManager`, `IAgentOrchestrator`, `ISLMService` end-to-end and route `ChatViewModel` through the orchestrator (the `ISLMService` implemented here is the prerequisite).
 - §4.C — real Human-in-the-Loop approval UI, real `RestoreBackupAsync`, uncommented `RegisterCoreTools()`.

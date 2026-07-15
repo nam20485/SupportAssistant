@@ -125,6 +125,12 @@ public class AiSettings
     /// Whether to enable response streaming
     /// </summary>
     public bool EnableStreaming { get; set; } = true;
+
+    /// <summary>
+    /// When true, skip the legacy AMD GPU / missing <c>HSA_OVERRIDE_GFX_VERSION</c> dialog and
+    /// fall straight back to CPU on affected hosts.
+    /// </summary>
+    public bool BypassLegacyRocmGpuDialog { get; set; }
 }
 
 /// <summary>

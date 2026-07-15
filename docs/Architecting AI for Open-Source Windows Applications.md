@@ -1,6 +1,8 @@
-
-
 # **Architecting AI for Open-Source Windows Applications: A Cost-Benefit Analysis of Local vs. Cloud Inference for Technical Support**
+
+> **Design research (July 2025).** Background analysis only. Implementation diverged — see
+> [`docs/ai-new-app-template.md`](./ai-new-app-template.md) (as-built notes) and
+> [`docs/plans/STATUS.md`](./plans/STATUS.md).
 
 ## **Section 1: The Strategic Dilemma: Local vs. Cloud AI for Sustainable Open-Source Projects**
 
